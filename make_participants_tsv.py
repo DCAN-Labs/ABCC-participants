@@ -15,7 +15,7 @@ Tabulated_Datasets_path = '/home/rando149/shared/data/Collection_3165_Supporting
 mri_info_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_mri01_20230407/abcd_mri01.txt'
 fastqc01_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_fastqc01-20211221.txt'
 
-# Hashmap of column name in participants.tsv to that of the DAIC Tabulated Datasets
+# Hashmap of column name in Tabulated Datasets to that of the participants.tsv
 tabulated_data_map = {
     "src_subject_id": "participant_id",
     "eventname": "session_id",
@@ -120,5 +120,7 @@ def format_session_id_to_bids():
 #TODO: Remove lines without imaging data (use fastqc01.txt for this - maybe integrate with audit repo)
 
 #TODO: Use Collection 3165 datastructure_manifest.txt to identify which subjects have been shared in order to populate Collection 3165 column
+
+#TODO: Matched Group
 
 
