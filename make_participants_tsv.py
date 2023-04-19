@@ -1,23 +1,31 @@
 #!/usr/bin/env python3
 
 import pandas as pd
-import numpy as np
-import csv
+import re
 
 pd.set_option('display.max_columns', None)
 pd.set_option('expand_frame_repr', False)
 
+# Data Sources
+
 # Download Tabulated Datasets from NDA
-#   Requires about 45GB (TODO: confirm this value) to load in pandas
-#   TODO: Confirm that this file is the same as the one from the NDA
-Tabulated_Datasets_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/ABCD4.0_MASTER_DATA_FILE.csv'
-# Origin: https://nda.nih.gov/data_structure.html?short_name=abcd_mri01
+#   Do not load this entire file into a pandas dataframe, it will take too much memory instead selectively load necessary columns
+#   TODO: The ABCD4.0_MASTER_DATA_FILE is a compilation of data sources. Figure out the actual data sources within the Tabulated BDatasets and Raw Behavioral Data: 
+#         https://nda.nih.gov/general-query.html?q=query=featured-datasets:Adolescent%20Brain%20Cognitive%20Development%20Study%20(ABCD)
+tabulated_data_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/ABCD4.0_MASTER_DATA_FILE.csv'
+# MRI Scanner info origin: https://nda.nih.gov/data_structure.html?short_name=abcd_mri01
 mri_info_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_mri01_20230407/abcd_mri01.txt'
+# QC info origin: https://nda.nih.gov/data_structure.html?short_name=abcd_fastqc01
 fastqc01_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_fastqc01-20211221.txt'
+# Collection 3165 datastructure manifest origin: https://nda.nih.gov/edit_collection.html?id=3165
+c3165_manifest_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_collection-3165-20230407/datastructure_manifest.txt'
+# Download previous participants_v1.0.0 from the collection to pull the matched groups. Original origin: https://github.com/DCAN-Labs/automated-subset-analysis
+#   TODO: Determine more legitimate source for the matched group info (Box directory with the ABCD 2.0 Release)
+matched_groups_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/participants_v1.0.0/participants.tsv'
 
 # Hashmap of column name in Tabulated Datasets to that of the participants.tsv
 tabulated_data_map = {
-    "src_subject_id": "participant_id",
+    "subjectkey": "participant_id",
     "eventname": "session_id",
     "sex": "sex",
     "demo_race_a_p___10": "demo_race_a_p___10",
@@ -58,7 +66,7 @@ tabulated_data_map = {
 
 # Columns populated by querying the sidecar json after dcm2bids OR from https://nda.nih.gov/data_structure.html?short_name=abcd_mri01
 mri_info_map = {
-    "src_subject_id": "participant_id",
+    "subjectkey": "participant_id",
     "eventname": "session_id",
     "mri_info_manufacturer": "scanner_manufacturer",
     "mri_info_manufacturersmn": "scanner_model",
@@ -67,6 +75,7 @@ mri_info_map = {
 
 # DCAN specific variables
 # TODO: Determine origin of matched groups or how to create it as more subjects are added
+# Collection 3165 variable should be derived from subjects that exist on the collection 3165 datastructure manifest
 dcan_data_list = [
     "collection_3165",
     "matched_groups"
@@ -97,17 +106,15 @@ sex_dict = {
 }
 
 # Select columns from the main Tabulated Datasets df
-tabulated_datasets_df = pd.read_csv('/home/rando149/shared/data/Collection_3165_Supporting_Documentation/ABCD4.0_MASTER_DATA_FILE.csv', usecols=tabulated_data_map.keys())
+tabulated_data_df = pd.read_csv(tabulated_data_path, usecols=tabulated_data_map.keys())
 
 # Select columns from the mri_info df
-mri_info_df = pd.read_csv('/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_mri01_20230407/abcd_mri01.txt', delimiter='\t', usecols=mri_info_map.keys())
+mri_info_df = pd.read_csv(mri_info_path, delimiter='\t', usecols=mri_info_map.keys())
 
 # Merge the two dataframes
-participants_df = pd.merge(tabulated_datasets_df, mri_info_df, how='left', on=['src_subject_id', 'eventname'])
+participants_df = pd.merge(tabulated_data_df, mri_info_df, how='right', on=['subjectkey', 'eventname'])
 
-# Rename columns
-participants_df.rename(columns = tabulated_data_map, inplace = True)
-
+participants_df[["mri_info_manufacturer", "mri_info_manufacturersmn", "mri_info_softwareversion"]].drop_duplicates().sort_values(by=["mri_info_manufacturer", "mri_info_manufacturersmn", "mri_info_softwareversion"])
 
 def format_participant_id_to_bids():
     #TODO
@@ -118,9 +125,18 @@ def format_session_id_to_bids():
     return
 
 #TODO: Remove lines without imaging data (use fastqc01.txt for this - maybe integrate with audit repo)
+qc_df = pd.read_csv(fastqc01_path, delimiter='\t')
 
 #TODO: Use Collection 3165 datastructure_manifest.txt to identify which subjects have been shared in order to populate Collection 3165 column
 
-#TODO: Matched Group
+c3165_manifest_df = pd.read_csv(c3165_manifest_path, delimiter='\t')
+# Get list of basenames + session
+subjects = c3165_manifest_df['manifest_name'].apply(lambda x: re.match('sub-NDARINV[A-Z0-9]{8}', x).group(0) if re.search('sub-NDARINV[A-Z0-9]{8}', x) else None).unique()
 
+no_sub_df = c3165_manifest_df['manifest_name'].apply(lambda x: re.sub('sub-NDARINV[A-Z0-9]{8}', '', x))
+unique_basenames = no_sub_df.value_counts().sort_index(ascending=True)
+print(unique_basenames.to_string())
+
+#TODO: Matched Group
+matched_groups_df = pd.read_csv(matched_groups_path, delimiter='\t', usecols=['participant_id', 'session_id', 'matched_group'])
 
