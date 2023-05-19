@@ -6,6 +6,12 @@ import re
 pd.set_option('display.max_columns', None)
 pd.set_option('expand_frame_repr', False)
 
+# participants.tsv creation process
+#   1. Initialize participants.tsv subjects and sessions using the fastqc01 spreadsheet
+#   2. Add demographic information from the tabulated datasets
+#   3. Add MRI information from the mri01 spreadsheet
+#   4. Add matched group information from the original participants.tsv
+
 # Data Sources
 
 # Download Tabulated Datasets from NDA
@@ -21,7 +27,7 @@ fastqc01_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documenta
 c3165_manifest_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_collection-3165-20230407/datastructure_manifest.txt'
 # Download previous participants_v1.0.0 from the collection to pull the matched groups. Original origin: https://github.com/DCAN-Labs/automated-subset-analysis
 #   TODO: Determine more legitimate source for the matched group info (Box directory with the ABCD 2.0 Release)
-matched_groups_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/participants_v1.0.0/participants.tsv'
+original_participants_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/participants_v1.0.0/participants.tsv'
 
 # Hashmap of column name in Tabulated Datasets to that of the participants.tsv
 tabulated_data_map = {
@@ -58,6 +64,25 @@ tabulated_data_map = {
     "neurocog_pc2.bl": "pc2",
     "neurocog_pc3.bl": "pc3"
 }
+
+# Data Dictionary Structure
+#User
+#{
+#    [
+#        {
+#        'column_name': 'participant_id',
+#        'data_source': , 
+#        'original_name': ,
+#        'description': ,
+#        }
+#    ]
+#}
+#Programmer
+#{
+#    'data_source': {
+#        'subject_key': 'participant_id',
+#    }
+#}
 
 # Verify that all required columns exist
 #tabulated_datasets_df = pd.read_csv('/home/rando149/shared/data/Collection_3165_Supporting_Documentation/ABCD4.0_MASTER_DATA_FILE.csv')
@@ -97,7 +122,8 @@ bids_session_dict = {
     '2_year_follow_up_y_arm_1':'ses-2YearFollowUpYArm1',
     '30_month_follow_up_arm_1': 'ses-30MonthFollowUpArm1',
     '3_year_follow_up_y_arm_1': 'ses-3YearFollowUpYArm1',
-    '42_month_follow_up_arm_1': 'ses-42MonthFollowUpArm1'
+    '42_month_follow_up_arm_1': 'ses-42MonthFollowUpArm1',
+    '4_year_follow_up_y_arm_1': 'ses-4YearFollowUpYArm1',
 }
 
 sex_dict = {
@@ -105,38 +131,58 @@ sex_dict = {
     'F': 2,
 }
 
-# Select columns from the main Tabulated Datasets df
-tabulated_data_df = pd.read_csv(tabulated_data_path, usecols=tabulated_data_map.keys())
+# Load the fastqc01.tsv file into a pandas dataframe, skip the second descriptor row, and rename subjectkey to participant_id and visit to session_id
+qc_df = pd.read_csv(fastqc01_path, delimiter='\t', skiprows=[1])
+# Return a dataframe of all unique subjectkey and visit from the qc_df
+qc_subjects = qc_df[['subjectkey', 'visit']].drop_duplicates()
+# Rename the subjectkey and visit columns to participant_id and session_id
+qc_subjects = qc_subjects.rename(columns={'subjectkey': 'participant_id', 'visit': 'session_id'})
 
-# Select columns from the mri_info df
-mri_info_df = pd.read_csv(mri_info_path, delimiter='\t', usecols=mri_info_map.keys())
+# Load the tabulated data file into a pandas dataframe using the tabulated_data_map keys as the columns
+tabulated_data_df = pd.read_csv(tabulated_data_path, usecols=tabulated_data_map.keys()).rename(columns=tabulated_data_map)
+# Merge the qc_subjects dataframe with the tabulated_data_df on participant_id and session_id
+participants_df = pd.merge(qc_subjects, tabulated_data_df, how='left', on=['participant_id', 'session_id'])
 
-# Merge the two dataframes
-participants_df = pd.merge(tabulated_data_df, mri_info_df, how='right', on=['subjectkey', 'eventname'])
+# Load the mri_info file into a pandas dataframe using the mri_info_map keys as the columns
+mri_info_df = pd.read_csv(mri_info_path, delimiter='\t', usecols=mri_info_map.keys()).rename(columns=mri_info_map)
 
+# Merge the participants_df with the mri_info_df on participant_id and session_id
+participants_df = pd.merge(participants_df, mri_info_df, how='left', on=['participant_id', 'session_id'])
+
+# Format the participant_id and session_id to BIDS format
+participants_df['participant_id'] = participants_df['participant_id'].apply(lambda x: 'sub-' + x.replace('_',''))
+participants_df['session_id'] = participants_df['session_id'].apply(lambda x: bids_session_dict[x])
+
+# Load collection 3165 datastructure manifest and return df of participant_ids and session_ids
+c3165_manifest_df = pd.read_csv(c3165_manifest_path, delimiter='\t')
+
+# Write a function to extract the subject and session from the associated_file in c3165_manifest_df
+def extract_subject_session(x):
+    if re.search('sub-NDARINV[A-Z0-9]{8}/ses-(baselineYear1Arm1|2YearFollowUpYArm1|4YearFollowUpYArm1)', x):
+        subject, session = re.search('sub-NDARINV[A-Z0-9]{8}/ses-(baselineYear1Arm1|2YearFollowUpYArm1|4YearFollowUpYArm1)', x).group(0).split('/')
+    else:
+        subject, session = None, None
+    return subject, session
+
+c3165_subject_list = c3165_manifest_df['associated_file'].apply(lambda x: extract_subject_session(x)).tolist()
+# return unique elements of c3165_subject_list
+c3165_subject_list = list(set(c3165_subject_list))
+
+for x in c3165_subject_list:
+    # Set 'collection_3165' to 1 where the participant_id and session_id match x[0] and x[1] in participants_df
+    participants_df.loc[(participants_df['participant_id'] == x[0]) & (participants_df['session_id'] == x[1]), 'collection_3165'] = 1
+
+# Load the matched_groups variable from the original participants.tsv into a pandas dataframe
+matched_groups_df = pd.read_csv(original_participants_path, delimiter='\t', usecols=['participant_id', 'session_id', 'matched_group'])
+participants_df = pd.merge(participants_df, matched_groups_df, how='left', on=['participant_id', 'session_id'])
+
+
+
+# Get list of all unique mri_info_manufacturer, mri_info_manufacturersmn, and mri_info_softwareversion
 participants_df[["mri_info_manufacturer", "mri_info_manufacturersmn", "mri_info_softwareversion"]].drop_duplicates().sort_values(by=["mri_info_manufacturer", "mri_info_manufacturersmn", "mri_info_softwareversion"])
 
-def format_participant_id_to_bids():
+def binarize_race_variables():
     #TODO
     return
 
-def format_session_id_to_bids():
-    #TODO
-    return
-
-#TODO: Remove lines without imaging data (use fastqc01.txt for this - maybe integrate with audit repo)
-qc_df = pd.read_csv(fastqc01_path, delimiter='\t')
-
-#TODO: Use Collection 3165 datastructure_manifest.txt to identify which subjects have been shared in order to populate Collection 3165 column
-
-c3165_manifest_df = pd.read_csv(c3165_manifest_path, delimiter='\t')
-# Get list of basenames + session
-subjects = c3165_manifest_df['manifest_name'].apply(lambda x: re.match('sub-NDARINV[A-Z0-9]{8}', x).group(0) if re.search('sub-NDARINV[A-Z0-9]{8}', x) else None).unique()
-
-no_sub_df = c3165_manifest_df['manifest_name'].apply(lambda x: re.sub('sub-NDARINV[A-Z0-9]{8}', '', x))
-unique_basenames = no_sub_df.value_counts().sort_index(ascending=True)
-print(unique_basenames.to_string())
-
-#TODO: Matched Group
-matched_groups_df = pd.read_csv(matched_groups_path, delimiter='\t', usecols=['participant_id', 'session_id', 'matched_group'])
 
