@@ -179,9 +179,27 @@ participants_df = pd.merge(participants_df, matched_groups_df, how='left', on=['
 
 
 # Get list of all unique mri_info_manufacturer, mri_info_manufacturersmn, and mri_info_softwareversion
-participants_df[["mri_info_manufacturer", "mri_info_manufacturersmn", "mri_info_softwareversion"]].drop_duplicates().sort_values(by=["mri_info_manufacturer", "mri_info_manufacturersmn", "mri_info_softwareversion"])
+# participants_df[["mri_info_manufacturer", "mri_info_manufacturersmn", "mri_info_softwareversion"]].drop_duplicates().sort_values(by=["mri_info_manufacturer", "mri_info_manufacturersmn", "mri_info_softwareversion"])
 
 def binarize_race_variables():
+    #TODO
+    #rename each of the column names to the value within that column 
+    #convert the value where it matches to a 1 and 0 everywhere else
+    #create a hashmap of string to int, import numpy
+    race_variable_map = {
+        "White Blanca": 1,
+        "not endorsed": 0,
+        np.nan: 777
+    }
+    #rename the column header, determine proper name 
+    column_header_names = {
+        "demo_race_a_p___10": "White"
+    }
+    #repeat for all race demographic variables 
+
+    return
+
+def convert_sex_variable():
     #TODO
     return
 
