@@ -197,10 +197,31 @@ def binarize_race_variables():
     }
     #repeat for all race demographic variables 
 
+    participants_df = participants_df.rename(columns=column_header_names)
+    for value in column_header_names:
+        participants_df[value] = participants_df[value].apply(lambda x: race_variable_map[x])
+
+    
+
     return
+#latinx needs to be converted like the demo variables
 
 def convert_sex_variable():
     #TODO
     return
+
+#cast handedness as an integer 
+participants_df["handedness"] = participants_df["handedness"].astype('int')
+#sibling_twins should be an integer
+participants_df["sibling_twins"] = participants_df["sibling_twins"].astype('int')
+#age should be an integer
+participants_df["age"] = participants_df["age"].astype('int')
+#make sure collection_3165 is an integer
+participants_df["collection_3165"] = participants_df["collection_3165"].astype('int')
+
+#compare columns with participants.json
+#add in neurocognitive scores (pc1,pc2,pc3)
+
+#FUTURE: put hash maps into a json format, to make them more readable. Potentially combine them with the data dictionary 
 
 
