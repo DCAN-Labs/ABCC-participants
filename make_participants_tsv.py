@@ -2,6 +2,7 @@
 
 import pandas as pd
 import re
+import numpy as np
 
 pd.set_option('display.max_columns', None)
 pd.set_option('expand_frame_repr', False)
@@ -16,6 +17,7 @@ pd.set_option('expand_frame_repr', False)
 
 # Download Tabulated Datasets from NDA
 #   Do not load this entire file into a pandas dataframe, it will take too much memory instead selectively load necessary columns
+#   Need to discuss where the correct data source is for the tabulated data. May have found a more up to date version from data release 5.0???
 #   TODO: The ABCD4.0_MASTER_DATA_FILE is a compilation of data sources. Figure out the actual data sources within the Tabulated BDatasets and Raw Behavioral Data: 
 #         https://nda.nih.gov/general-query.html?q=query=featured-datasets:Adolescent%20Brain%20Cognitive%20Development%20Study%20(ABCD)
 tabulated_data_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/ABCD4.0_MASTER_DATA_FILE.csv'
@@ -188,12 +190,47 @@ def binarize_race_variables():
     #create a hashmap of string to int, import numpy
     race_variable_map = {
         "White Blanca": 1,
+        "Black/African American Negra o afroamericana": 1,
+        "American Indian  Native American India Americana  India Nativa Americana": 1,
+        "Alaska Native Nativa de Alaska": 1,
+        "Native Hawaiian Nativa de Hawi": 1,
+        "Guamanian Guamaniana": 1,
+        "Samoan Samoana": 1,
+        "Other Pacific Islander Nativa de otras islas del Pacifico": 1,
+        "Asian Indian India asitica": 1,
+        "Chinese China": 1,
+        "Filipino Filipina": 1,
+        "Japanese Japonesa": 1,
+        "Korean Coreana": 1,
+        "Vietnamese Vietnamita": 1,
+        "Other Asian Otra raza asitica": 1,
+        "Other Race Otra raza": 1,
+        "Refuse To Answer Niego contestar": 1,
+        "Don't Know No lo s": 1,
         "not endorsed": 0,
         np.nan: 777
     }
     #rename the column header, determine proper name 
     column_header_names = {
-        "demo_race_a_p___10": "White"
+        "demo_race_a_p___10": "White",
+        "demo_race_a_p___11": "",
+        "demo_race_a_p___12": "",
+        "demo_race_a_p___13": "",
+        "demo_race_a_p___14": "",
+        "demo_race_a_p___15": "",
+        "demo_race_a_p___16": "",
+        "demo_race_a_p___17": "",
+        "demo_race_a_p___18": "",
+        "demo_race_a_p___19": "",
+        "demo_race_a_p___20": "",
+        "demo_race_a_p___21": "",
+        "demo_race_a_p___22": "",
+        "demo_race_a_p___23": "",
+        "demo_race_a_p___24": "",
+        "demo_race_a_p___25": "",
+        "demo_race_a_p___77": "",
+        "demo_race_a_p___99": "",
+        "latinx": ""
     }
     #repeat for all race demographic variables 
 
@@ -201,11 +238,10 @@ def binarize_race_variables():
     for value in column_header_names:
         participants_df[value] = participants_df[value].apply(lambda x: race_variable_map[x])
 
-    
-
     return
 #latinx needs to be converted like the demo variables
 
+#need to review what converting the sex variable means, i.e. cast as an integer?
 def convert_sex_variable():
     #TODO
     return
@@ -220,7 +256,8 @@ participants_df["age"] = participants_df["age"].astype('int')
 participants_df["collection_3165"] = participants_df["collection_3165"].astype('int')
 
 #compare columns with participants.json
-#add in neurocognitive scores (pc1,pc2,pc3)
+#add in neurocognitive scores (pc1,pc2,pc3), may already be done
+#sort from A to Z based on subject ID?
 
 #FUTURE: put hash maps into a json format, to make them more readable. Potentially combine them with the data dictionary 
 
