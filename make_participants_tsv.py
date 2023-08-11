@@ -35,7 +35,7 @@ original_participants_path = '/home/rando149/shared/data/Collection_3165_Support
 tabulated_data_map = {
     "subjectkey": "participant_id",
     "eventname": "session_id",
-    "sex": "sex",
+    "sex_at_birth": "sex",
     "demo_race_a_p___10": "demo_race_a_p___10",
     "demo_race_a_p___11": "demo_race_a_p___11",
     "demo_race_a_p___12": "demo_race_a_p___12",
@@ -128,6 +128,7 @@ bids_session_dict = {
     '4_year_follow_up_y_arm_1': 'ses-4YearFollowUpYArm1',
 }
 
+#need to edit this still 
 sex_dict = {
     'M': 1,
     'F': 2,
