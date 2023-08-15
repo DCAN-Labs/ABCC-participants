@@ -17,12 +17,15 @@ pd.set_option('expand_frame_repr', False)
 
 # Download Tabulated Datasets from NDA
 #   Do not load this entire file into a pandas dataframe, it will take too much memory instead selectively load necessary columns
-#   Need to discuss where the correct data source is for the tabulated data. May have found a more up to date version from data release 5.0???
+#   Need to discuss where the correct data source is for the tabulated data. May have found a more up to date version from data release 5.0? Also, NDA Dictionary 
 #   TODO: The ABCD4.0_MASTER_DATA_FILE is a compilation of data sources. Figure out the actual data sources within the Tabulated BDatasets and Raw Behavioral Data: 
 #         https://nda.nih.gov/general-query.html?q=query=featured-datasets:Adolescent%20Brain%20Cognitive%20Development%20Study%20(ABCD)
 tabulated_data_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/ABCD4.0_MASTER_DATA_FILE.csv'
-# MRI Scanner info origin: https://nda.nih.gov/data_structure.html?short_name=abcd_mri01
-mri_info_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_mri01_20230407/abcd_mri01.txt'
+# NDA Dictionary demographics txt is currently being used for sex information. Need to discuss whether or not to use other information as well. 
+nda_dict_demo_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/pdem02.txt'
+# MRI Scanner info origin: https://nda.nih.gov/data_structure.html?short_name=abcd_mri01 
+# !! this origin has actually been changed to the NDA Dictionary source !!
+mri_info_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/abcd_mri01.txt'
 # QC info origin: https://nda.nih.gov/data_structure.html?short_name=abcd_fastqc01
 fastqc01_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_fastqc01-20211221.txt'
 # Collection 3165 datastructure manifest origin: https://nda.nih.gov/edit_collection.html?id=3165
@@ -35,7 +38,6 @@ original_participants_path = '/home/rando149/shared/data/Collection_3165_Support
 tabulated_data_map = {
     "subjectkey": "participant_id",
     "eventname": "session_id",
-    "sex_at_birth": "sex",
     "demo_race_a_p___10": "demo_race_a_p___10",
     "demo_race_a_p___11": "demo_race_a_p___11",
     "demo_race_a_p___12": "demo_race_a_p___12",
@@ -67,29 +69,11 @@ tabulated_data_map = {
     "neurocog_pc3.bl": "pc3"
 }
 
-# Data Dictionary Structure
-#User
-#{
-#    [
-#        {
-#        'column_name': 'participant_id',
-#        'data_source': , 
-#        'original_name': ,
-#        'description': ,
-#        }
-#    ]
-#}
-#Programmer
-#{
-#    'data_source': {
-#        'subject_key': 'participant_id',
-#    }
-#}
-
-# Verify that all required columns exist
-#tabulated_datasets_df = pd.read_csv('/home/rando149/shared/data/Collection_3165_Supporting_Documentation/ABCD4.0_MASTER_DATA_FILE.csv')
-#for col in tabulated_data_map.keys():
-#    print(f'{col} {col in tabulated_datasets_df.columns}')
+# Hashmap for the demographic information being used from the NDA Dictionary demographics txt
+nda_dict_demo_map = {
+    "subjectkey": "participant_id",
+    "demo_sex_v2": "sex"
+}
 
 # Columns populated by querying the sidecar json after dcm2bids OR from https://nda.nih.gov/data_structure.html?short_name=abcd_mri01
 mri_info_map = {
@@ -109,6 +93,7 @@ dcan_data_list = [
 ]
 
 # NeuroCog principal component scores: search for pc1, pc2, and pc3 in https://deap.nimhda.org/applications/Ontology/hierarchy.php?entry=display
+# !! Currently not being utilized. Cannot access the linked url above !! 
 pc_map = {
     "pc1": "neurocog_pc1.bl",
     "pc2": "neurocog_pc2.bl",
@@ -128,7 +113,7 @@ bids_session_dict = {
     '4_year_follow_up_y_arm_1': 'ses-4YearFollowUpYArm1',
 }
 
-#need to edit this still 
+# Based off of sex the child was assigned at birth, may not need this though since its already binarized
 sex_dict = {
     'M': 1,
     'F': 2,
@@ -146,9 +131,13 @@ tabulated_data_df = pd.read_csv(tabulated_data_path, usecols=tabulated_data_map.
 # Merge the qc_subjects dataframe with the tabulated_data_df on participant_id and session_id
 participants_df = pd.merge(qc_subjects, tabulated_data_df, how='left', on=['participant_id', 'session_id'])
 
+# NEW: Load the proper sex information from the NDA Dictionary demographics source
+nda_dict_demo_df = pd.read_csv(nda_dict_demo_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_map.keys()).rename(columns=nda_dict_demo_map)
+# NEW: Merge the participants_df with the nda_dict_demo_df on participant_id
+participants_df = pd.merge(participants_df, nda_dict_demo_df, how='left', on=['participant_id'])
+
 # Load the mri_info file into a pandas dataframe using the mri_info_map keys as the columns
 mri_info_df = pd.read_csv(mri_info_path, delimiter='\t', usecols=mri_info_map.keys()).rename(columns=mri_info_map)
-
 # Merge the participants_df with the mri_info_df on participant_id and session_id
 participants_df = pd.merge(participants_df, mri_info_df, how='left', on=['participant_id', 'session_id'])
 
@@ -180,11 +169,11 @@ matched_groups_df = pd.read_csv(original_participants_path, delimiter='\t', usec
 participants_df = pd.merge(participants_df, matched_groups_df, how='left', on=['participant_id', 'session_id'])
 
 
-
 # Get list of all unique mri_info_manufacturer, mri_info_manufacturersmn, and mri_info_softwareversion
 # participants_df[["mri_info_manufacturer", "mri_info_manufacturersmn", "mri_info_softwareversion"]].drop_duplicates().sort_values(by=["mri_info_manufacturer", "mri_info_manufacturersmn", "mri_info_softwareversion"])
 
-def binarize_race_variables():
+# !! still casting column ids incorrectly. Going to try fixing later !!
+def binarize_race_variables(participants_df):
     #TODO
     #rename each of the column names to the value within that column 
     #convert the value where it matches to a 1 and 0 everywhere else
@@ -210,47 +199,53 @@ def binarize_race_variables():
         "Don't Know No lo s": 1,
         "not endorsed": 0,
         np.nan: 777
+        #2.0: 0,
+        #1.0: 1,
+        #nan: 777,
+        #777.0: 777,
+        #999.0: 999
     }
     #rename the column header, determine proper name 
     column_header_names = {
         "demo_race_a_p___10": "White",
-        "demo_race_a_p___11": "",
-        "demo_race_a_p___12": "",
-        "demo_race_a_p___13": "",
-        "demo_race_a_p___14": "",
-        "demo_race_a_p___15": "",
-        "demo_race_a_p___16": "",
-        "demo_race_a_p___17": "",
-        "demo_race_a_p___18": "",
-        "demo_race_a_p___19": "",
-        "demo_race_a_p___20": "",
-        "demo_race_a_p___21": "",
-        "demo_race_a_p___22": "",
-        "demo_race_a_p___23": "",
-        "demo_race_a_p___24": "",
-        "demo_race_a_p___25": "",
-        "demo_race_a_p___77": "",
-        "demo_race_a_p___99": "",
-        "latinx": ""
+        "demo_race_a_p___11": "Black/African American",
+        "demo_race_a_p___12": "American Indian, Native American",
+        "demo_race_a_p___13": "Alaska Native",
+        "demo_race_a_p___14": "Native Hawaiian",
+        "demo_race_a_p___15": "Guamanian",
+        "demo_race_a_p___16": "Samoan",
+        "demo_race_a_p___17": "Other Pacific Islander",
+        "demo_race_a_p___18": "Asian Indian",
+        "demo_race_a_p___19": "Chinese",
+        "demo_race_a_p___20": "Filipino",
+        "demo_race_a_p___21": "Japanese",
+        "demo_race_a_p___22": "Korean",
+        "demo_race_a_p___23": "Vietnamese",
+        "demo_race_a_p___24": "Other Asian",
+        "demo_race_a_p___25": "Other Race",
+        "demo_race_a_p___77": "Refuse to Answer",
+        "demo_race_a_p___99": "Dont Know",
+        #"latinx": "Do you consider the child Hispanic/Latino/Latina?"
     }
     #repeat for all race demographic variables 
 
-    participants_df = participants_df.rename(columns=column_header_names)
     for value in column_header_names:
         participants_df[value] = participants_df[value].apply(lambda x: race_variable_map[x])
+    participants_df = participants_df.rename(columns=column_header_names)
 
     return
 #latinx needs to be converted like the demo variables
 
-#need to review what converting the sex variable means, i.e. cast as an integer?
-def convert_sex_variable():
-    #TODO
-    return
-
+#need to review what converting the sex variable means, i.e. cast as an integer? may not need to do this though when using NDA Dictionary demographics source.
+#def convert_sex_variable():
+#    #TODO
+#    return
+binarize_race_variables(participants_df)
 #cast handedness as an integer 
+participants_df["handedness"] = participants_df["handedness"].fillna(0)
 participants_df["handedness"] = participants_df["handedness"].astype('int')
 #sibling_twins should be an integer
-participants_df["sibling_twins"] = participants_df["sibling_twins"].astype('int')
+participants_df["siblings_twins"] = participants_df["siblings_twins"].astype('int')
 #age should be an integer
 participants_df["age"] = participants_df["age"].astype('int')
 #make sure collection_3165 is an integer
@@ -260,6 +255,37 @@ participants_df["collection_3165"] = participants_df["collection_3165"].astype('
 #add in neurocognitive scores (pc1,pc2,pc3), may already be done
 #sort from A to Z based on subject ID?
 
+
+
+
+
+
 #FUTURE: put hash maps into a json format, to make them more readable. Potentially combine them with the data dictionary 
+
+#FUTURE NOTES:
+
+# Data Dictionary Structure
+#User
+#{
+#    [
+#        {
+#        'column_name': 'participant_id',
+#        'data_source': , 
+#        'original_name': ,
+#        'description': ,
+#        }
+#    ]
+#}
+#Programmer
+#{
+#    'data_source': {
+#        'subject_key': 'participant_id',
+#    }
+#}
+
+# Verify that all required columns exist
+#tabulated_datasets_df = pd.read_csv('/home/rando149/shared/data/Collection_3165_Supporting_Documentation/ABCD4.0_MASTER_DATA_FILE.csv')
+#for col in tabulated_data_map.keys():
+#    print(f'{col} {col in tabulated_datasets_df.columns}')
 
 
