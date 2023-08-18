@@ -204,7 +204,7 @@ for x in c3165_subject_list:
     # Set 'collection_3165' to 1 where the participant_id and session_id match x[0] and x[1] in participants_df
     participants_df.loc[(participants_df['participant_id'] == x[0]) & (participants_df['session_id'] == x[1]), 'collection_3165'] = 1
 
-# Load the matched_groups variable from the original participants.tsv into a pandas dataframe
+# Load the matched_groups variable from the original participants.tsv into a pandas dataframe ?? only use participant_id ??
 matched_groups_df = pd.read_csv(original_participants_path, delimiter='\t', usecols=['participant_id', 'session_id', 'matched_group'])
 participants_df = pd.merge(participants_df, matched_groups_df, how='left', on=['participant_id', 'session_id'])
 
@@ -261,11 +261,73 @@ participants_df["age"] = participants_df["age"].astype('int')
 #make sure collection_3165 is an integer
 participants_df["collection_3165"] = participants_df["collection_3165"].fillna(0)
 participants_df["collection_3165"] = participants_df["collection_3165"].astype('int')
+#fill site NaNs with integer 888
+participants_df["site"] = participants_df["site"].fillna(888)
+#fill scanner_manufacturer NaNs with integer 888
+participants_df["scanner_manufacturer"] = participants_df["scanner_manufacturer"].fillna(888)
+#fill scanner_model NaNs with integer 888
+participants_df["scanner_model"] = participants_df["scanner_model"].fillna(888)
+#fill scanner_software NaNs with integer 888
+participants_df["scanner_software"] = participants_df["scanner_software"].fillna(888)
+
+#make sure matched_group is an integer !! this may only be happening for year1 subject IDs !!
+#participants_df["matched_group"] = participants_df["matched_group"].fillna(888)
+#participants_df["matched_group"] = participants_df["matched_group"].astype('int')
+
+#need to check on sex information 
+#participants_df["sex"] = participants_df["sex"].fillna(777)
+#participants_df["sex"] = participants_df["sex"].astype('int')
+
 
 #compare columns with participants.json
 #sort from A to Z based on subject ID?
 
-print(participants_df)
+reordered_columns = [
+    'participant_id', 
+    'session_id', 
+    'collection_3165', 
+    'site', 
+    'scanner_manufacturer', 
+    'scanner_model', 
+    'scanner_software', 
+    'matched_group', 
+    'sex', 
+    'White', 
+    'Black/African American', 
+    'American Indian, Native American', 
+    'Alaska Native', 
+    'Native Hawaiian', 
+    'Guamanian', 
+    'Samoan', 
+    'Other Pacific Islander', 
+    'Asian Indian', 
+    'Chinese', 
+    'Filipino', 
+    'Japanese', 
+    'Korean', 
+    'Vietnamese', 
+    'Other Asian', 
+    'Other Race', 
+    'Refuse to Answer', 
+    'Dont Know', 
+    'age', 
+    'handedness', 
+    'siblings_twins', 
+    'income', 
+    'participant_education', 
+    'parental_education', 
+    'parental_partner_education', 
+    'anesthesia_exposure',
+    'pc1',
+    'pc2',
+    'pc3',
+    'Do you consider the child Hispanic/Latino/Latina?'
+    ] 
+
+#reorder columns to match older versions of participants tsv
+participants_df_reordered = participants_df[reordered_columns]
+
+print(participants_df_reordered)
 
 
 
