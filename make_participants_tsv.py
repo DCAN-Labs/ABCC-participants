@@ -70,7 +70,7 @@ nda_dict_demo_map = {
     "demo_race_a_p___24": "Other Asian",
     "demo_race_a_p___25": "Other Race",
     "demo_race_a_p___77": "Refuse to Answer",
-    "demo_race_a_p___99": "Dont Know",
+    "demo_race_a_p___99": "Don't Know",
     "demo_ethn_v2": "Do you consider the child Hispanic/Latino/Latina?",
     "demo_comb_income_v2": "income",
     "demo_prnt_ed_v2": "parental_education",
@@ -234,26 +234,26 @@ def binarize_race_variables(participants_df):
         "Other Asian",
         "Other Race",
         "Refuse to Answer",
-        "Dont Know",
+        "Don't Know",
         )
     #repeat for all race demographic variables 
     for value in column_header_names:
-        participants_df[value] = participants_df[value].fillna(777)
+        participants_df[value] = participants_df[value].fillna(888)
         participants_df[value] = participants_df[value].astype('int')
 
     return
 
 # !! latinx needs to be converted like the demo variables !!
-participants_df["Do you consider the child Hispanic/Latino/Latina?"] = participants_df["Do you consider the child Hispanic/Latino/Latina?"].fillna(0)
+participants_df["Do you consider the child Hispanic/Latino/Latina?"] = participants_df["Do you consider the child Hispanic/Latino/Latina?"].fillna(888)
 participants_df["Do you consider the child Hispanic/Latino/Latina?"] = participants_df["Do you consider the child Hispanic/Latino/Latina?"].astype('int')
 
 binarize_race_variables(participants_df)
 
 #cast handedness as an integer 
-participants_df["handedness"] = participants_df["handedness"].fillna(777)
+participants_df["handedness"] = participants_df["handedness"].fillna(888)
 participants_df["handedness"] = participants_df["handedness"].astype('int')
 #sibling_twins should be an integer
-participants_df["siblings_twins"] = participants_df["siblings_twins"].fillna(777)
+participants_df["siblings_twins"] = participants_df["siblings_twins"].fillna(888)
 participants_df["siblings_twins"] = participants_df["siblings_twins"].astype('int')
 #age should be an integer
 participants_df["age"] = participants_df["age"].fillna(777)
@@ -271,61 +271,94 @@ participants_df["scanner_model"] = participants_df["scanner_model"].fillna(888)
 participants_df["scanner_software"] = participants_df["scanner_software"].fillna(888)
 
 #make sure matched_group is an integer !! this may only be happening for year1 subject IDs !!
-#participants_df["matched_group"] = participants_df["matched_group"].fillna(888)
-#participants_df["matched_group"] = participants_df["matched_group"].astype('int')
+participants_df["matched_group"] = participants_df["matched_group"].fillna(888)
+participants_df["matched_group"] = participants_df["matched_group"].astype('int')
 
 #need to check on sex information 
-#participants_df["sex"] = participants_df["sex"].fillna(777)
-#participants_df["sex"] = participants_df["sex"].astype('int')
+participants_df["sex"] = participants_df["sex"].fillna(888)
+participants_df["sex"] = participants_df["sex"].astype('int')
+
+# ?? should we fill in age NaNs with 888 ??
+participants_df["age"] = participants_df["age"].fillna(888)
+
+#cast income as an integer and fill in NaNs with 888
+participants_df["income"] = participants_df["income"].fillna(888)
+participants_df["income"] = participants_df["income"].astype('int')
+
+#cast participant_education as an integer and fill in NaNs with 888
+participants_df["participant_education"] = participants_df["participant_education"].fillna(888)
+participants_df["participant_education"] = participants_df["participant_education"].astype('int')
+
+#cast parental_education as an integer and fill in NaNs with 888
+participants_df["parental_education"] = participants_df["parental_education"].fillna(888)
+participants_df["parental_education"] = participants_df["parental_education"].astype('int')
+
+#cast parental_partner_education as an integer and fill in NaNs with 888
+participants_df["parental_partner_education"] = participants_df["parental_partner_education"].fillna(888)
+participants_df["parental_partner_education"] = participants_df["parental_partner_education"].astype('int')
+
+#cast anesthesia_exposure as an integer and fill in NaNs with 888
+participants_df["anesthesia_exposure"] = participants_df["anesthesia_exposure"].fillna(888)
+participants_df["anesthesia_exposure"] = participants_df["anesthesia_exposure"].astype('int')
+
+# ?? fill pc scores' NaNs with 888 ?? and cast it as an integer ??
+#participants_df["pc1"] = participants_df["pc1"].fillna(888)
+#participants_df["pc2"] = participants_df["pc2"].fillna(888)
+#participants_df["pc3"] = participants_df["pc3"].fillna(888)
+
+
+
 
 
 #compare columns with participants.json
 #sort from A to Z based on subject ID?
 
 reordered_columns = [
-    'participant_id', 
-    'session_id', 
-    'collection_3165', 
-    'site', 
-    'scanner_manufacturer', 
-    'scanner_model', 
-    'scanner_software', 
-    'matched_group', 
-    'sex', 
-    'White', 
-    'Black/African American', 
-    'American Indian, Native American', 
-    'Alaska Native', 
-    'Native Hawaiian', 
-    'Guamanian', 
-    'Samoan', 
-    'Other Pacific Islander', 
-    'Asian Indian', 
-    'Chinese', 
-    'Filipino', 
-    'Japanese', 
-    'Korean', 
-    'Vietnamese', 
-    'Other Asian', 
-    'Other Race', 
-    'Refuse to Answer', 
-    'Dont Know', 
-    'age', 
-    'handedness', 
-    'siblings_twins', 
-    'income', 
-    'participant_education', 
-    'parental_education', 
-    'parental_partner_education', 
-    'anesthesia_exposure',
-    'pc1',
-    'pc2',
-    'pc3',
-    'Do you consider the child Hispanic/Latino/Latina?'
+    "participant_id", 
+    "session_id", 
+    "collection_3165", 
+    "site", 
+    "scanner_manufacturer", 
+    "scanner_model", 
+    "scanner_software", 
+    "matched_group", 
+    "sex", 
+    "White", 
+    "Black/African American", 
+    "American Indian, Native American", 
+    "Alaska Native", 
+    "Native Hawaiian", 
+    "Guamanian", 
+    "Samoan", 
+    "Other Pacific Islander", 
+    "Asian Indian", 
+    "Chinese", 
+    "Filipino", 
+    "Japanese", 
+    "Korean", 
+    "Vietnamese", 
+    "Other Asian", 
+    "Other Race", 
+    "Refuse to Answer", 
+    "Don't Know", 
+    "Do you consider the child Hispanic/Latino/Latina?",
+    "age", 
+    "handedness", 
+    "siblings_twins", 
+    "income", 
+    "participant_education", 
+    "parental_education", 
+    "parental_partner_education", 
+    "anesthesia_exposure",
+    "pc1",
+    "pc2",
+    "pc3"
     ] 
 
 #reorder columns to match older versions of participants tsv
 participants_df_reordered = participants_df[reordered_columns]
+
+# ?? sort from A to Z by subject_id ??
 
 print(participants_df_reordered)
 
