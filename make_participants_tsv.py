@@ -19,8 +19,10 @@ pd.set_option('expand_frame_repr', False)
 #   Do not load this entire file into a pandas dataframe, it will take too much memory instead selectively load necessary columns. It is currently being used for handedness information and pc scores
 #   The ABCD4.0_MASTER_DATA_FILE is a compilation of data sources. Figure out the actual data sources within the Tabulated BDatasets and Raw Behavioral Data: https://nda.nih.gov/general-query.html?q=query=featured-datasets:Adolescent%20Brain%20Cognitive%20Development%20Study%20(ABCD)
 tabulated_data_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/ABCD4.0_MASTER_DATA_FILE.csv'
-# NDA Dictionary's ABCD Parent Demographics Survey is currently being used for the majority of demographic information. 
+# NDA Dictionary's ABCD Parent Demographics Survey is currently being used for demographic information that is invariable. 
 nda_dict_demo_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/pdem02.txt'
+# NDA Dictionary's ABCD Longitudinal Parent Demographics Survey contains demographic information that will have changed since baseline.
+nda_dict_demo_long_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/abcd_lpds01.txt'
 # NDA Dictionary's ABCD Family History Assessment Part 1 is being used for twin information
 nda_dict_twin_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/fhxp102.txt'
 # NDA Dictionary's site information path
@@ -47,11 +49,11 @@ tabulated_data_map = {
     "neurocog_pc3.bl": "pc3"
 }
 
-# Hashmap for the demographic information being used from the NDA Dictionary demographics txt
+# Hashmap for the demographic information being used from the NDA Dictionary ABCD Parent Demographics Survey that is invariable
 nda_dict_demo_map = {
     "subjectkey": "participant_id",
-    "eventname": "session_id",
-    "interview_age": "age",
+    #"eventname": "session_id",
+    #"interview_age": "age",
     "demo_sex_v2": "sex",
     "demo_race_a_p___10": "White",
     "demo_race_a_p___11": "Black/African American",
@@ -72,11 +74,22 @@ nda_dict_demo_map = {
     "demo_race_a_p___77": "Refuse to Answer",
     "demo_race_a_p___99": "Don't Know",
     "demo_ethn_v2": "Do you consider the child Hispanic/Latino/Latina?",
-    "demo_comb_income_v2": "income",
-    "demo_prnt_ed_v2": "parental_education",
+    #"demo_comb_income_v2": "income",
+    #"demo_prnt_ed_v2": "parental_education",
     # !! do we want parental_partner_education information?? !!
-    "demo_prtnr_ed_v2": "parental_partner_education",
-    "demo_ed_v2": "participant_education"
+    #"demo_prtnr_ed_v2": "parental_partner_education"
+    #"demo_ed_v2": "participant_education"
+}
+
+# Hashmap for the demographic information being used from the Longitudinal Parent Demographics Survey that may change from baseline
+nda_dict_demo_long_map = {
+    "subjectkey": "participant_id",
+    "eventname": "session_id",
+    "interview_age": "age",
+    "demo_ed_v2_l": "participant_education",
+    "demo_prnt_ed_v2_l": "parental_education",
+    "demo_prtnr_ed_v2_l": "parental_partner_education",
+    "demo_comb_income_v2_l": "income"
 }
 
 # Hashmap for twin information from the NDA Dictionary's ABCD Family History Assessment Part 1
@@ -156,10 +169,15 @@ tabulated_data_df = pd.read_csv(tabulated_data_path, usecols=tabulated_data_map.
 # Merge the qc_subjects dataframe with the tabulated_data_df on participant_id and session_id
 participants_df = pd.merge(qc_subjects, tabulated_data_df, how='left', on=['participant_id', 'session_id'])
 
-# NEW: Load the proper sex information from the NDA Dictionary demographics source
-nda_dict_demo_df = pd.read_csv(nda_dict_demo_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_map.keys()).rename(columns=nda_dict_demo_map)
+# NEW: Load the variable demographic information from the NDA Dictionary's ABCD Longitudinal Parent Demographics Survey
+nda_dict_demo_long_df = pd.read_csv(nda_dict_demo_long_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_long_map.keys()).rename(columns=nda_dict_demo_long_map)
 # NEW: Merge the participants_df with the nda_dict_demo_df on participant_id and session_id
-participants_df = pd.merge(participants_df, nda_dict_demo_df, how='left', on=['participant_id', 'session_id'])
+participants_df = pd.merge(participants_df, nda_dict_demo_long_df, how='left', on=['participant_id', 'session_id'])
+
+# NEW: Load the invariable demographic information from the NDA Dictionary's ABCD Parent Demographics Survey
+nda_dict_demo_df = pd.read_csv(nda_dict_demo_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_map.keys()).rename(columns=nda_dict_demo_map)
+# NEW: Merge the participants_df with the nda_dict_demo_df on participant_id
+participants_df = pd.merge(participants_df, nda_dict_demo_df, how='left', on=['participant_id'])
 
 # NEW: Load the proper twin information from the NDA Dictionary's ABCD Family History Assessment Part 1
 nda_dict_twin_df = pd.read_csv(nda_dict_twin_path, delimiter='\t', skiprows=[1], usecols=nda_dict_twin_map.keys()).rename(columns=nda_dict_twin_map)
