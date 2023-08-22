@@ -52,8 +52,8 @@ tabulated_data_map = {
 # Hashmap for the demographic information being used from the NDA Dictionary ABCD Parent Demographics Survey that is invariable
 nda_dict_demo_map = {
     "subjectkey": "participant_id",
-    #"eventname": "session_id",
-    #"interview_age": "age",
+    "eventname": "session_id",
+    "interview_age": "age",
     "demo_sex_v2": "sex",
     "demo_race_a_p___10": "White",
     "demo_race_a_p___11": "Black/African American",
@@ -74,11 +74,11 @@ nda_dict_demo_map = {
     "demo_race_a_p___77": "Refuse to Answer",
     "demo_race_a_p___99": "Don't Know",
     "demo_ethn_v2": "Do you consider the child Hispanic/Latino/Latina?",
-    #"demo_comb_income_v2": "income",
-    #"demo_prnt_ed_v2": "parental_education",
+    "demo_comb_income_v2": "income",
+    "demo_prnt_ed_v2": "parental_education",
     # !! do we want parental_partner_education information?? !!
-    #"demo_prtnr_ed_v2": "parental_partner_education"
-    #"demo_ed_v2": "participant_education"
+    "demo_prtnr_ed_v2": "parental_partner_education",
+    "demo_ed_v2": "participant_education"
 }
 
 # Hashmap for the demographic information being used from the Longitudinal Parent Demographics Survey that may change from baseline
@@ -161,23 +161,25 @@ bids_session_dict = {
 qc_df = pd.read_csv(fastqc01_path, delimiter='\t', skiprows=[1])
 # Return a dataframe of all unique subjectkey and visit from the qc_df
 qc_subjects = qc_df[['subjectkey', 'visit']].drop_duplicates()
-# Rename the subjectkey and visit columns to participant_id and session_id
+# Rename the subjectkey and visit columns to participant_id and session_id and sort by particpant_id
 qc_subjects = qc_subjects.rename(columns={'subjectkey': 'participant_id', 'visit': 'session_id'})
+qc_subjects_sorted = qc_subjects.sort_values(by='participant_id')
 
 # Load the tabulated data file into a pandas dataframe using the tabulated_data_map keys as the columns
 tabulated_data_df = pd.read_csv(tabulated_data_path, usecols=tabulated_data_map.keys()).rename(columns=tabulated_data_map)
 # Merge the qc_subjects dataframe with the tabulated_data_df on participant_id and session_id
-participants_df = pd.merge(qc_subjects, tabulated_data_df, how='left', on=['participant_id', 'session_id'])
+participants_df = pd.merge(qc_subjects_sorted, tabulated_data_df, how='left', on=['participant_id', 'session_id'])
+
+# NEW: Load the invariable demographic information from the NDA Dictionary's ABCD Parent Demographics Survey
+nda_dict_demo_df = pd.read_csv(nda_dict_demo_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_map.keys()).rename(columns=nda_dict_demo_map)
+# NEW: Merge the participants_df with the nda_dict_demo_df on participant_id
+participants_df = pd.merge(participants_df, nda_dict_demo_df, how='left', on=['participant_id', 'session_id'])
 
 # NEW: Load the variable demographic information from the NDA Dictionary's ABCD Longitudinal Parent Demographics Survey
 nda_dict_demo_long_df = pd.read_csv(nda_dict_demo_long_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_long_map.keys()).rename(columns=nda_dict_demo_long_map)
 # NEW: Merge the participants_df with the nda_dict_demo_df on participant_id and session_id
 participants_df = pd.merge(participants_df, nda_dict_demo_long_df, how='left', on=['participant_id', 'session_id'])
 
-# NEW: Load the invariable demographic information from the NDA Dictionary's ABCD Parent Demographics Survey
-nda_dict_demo_df = pd.read_csv(nda_dict_demo_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_map.keys()).rename(columns=nda_dict_demo_map)
-# NEW: Merge the participants_df with the nda_dict_demo_df on participant_id
-participants_df = pd.merge(participants_df, nda_dict_demo_df, how='left', on=['participant_id'])
 
 # NEW: Load the proper twin information from the NDA Dictionary's ABCD Family History Assessment Part 1
 nda_dict_twin_df = pd.read_csv(nda_dict_twin_path, delimiter='\t', skiprows=[1], usecols=nda_dict_twin_map.keys()).rename(columns=nda_dict_twin_map)
