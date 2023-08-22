@@ -53,7 +53,7 @@ tabulated_data_map = {
 nda_dict_demo_map = {
     "subjectkey": "participant_id",
     "eventname": "session_id",
-    "interview_age": "age",
+    #"interview_age": "age",
     "demo_sex_v2": "sex",
     "demo_race_a_p___10": "White",
     "demo_race_a_p___11": "Black/African American",
@@ -74,11 +74,11 @@ nda_dict_demo_map = {
     "demo_race_a_p___77": "Refuse to Answer",
     "demo_race_a_p___99": "Don't Know",
     "demo_ethn_v2": "Do you consider the child Hispanic/Latino/Latina?",
-    "demo_comb_income_v2": "income",
-    "demo_prnt_ed_v2": "parental_education",
+    #"demo_comb_income_v2": "income",
+    #"demo_prnt_ed_v2": "parental_education",
     # !! do we want parental_partner_education information?? !!
-    "demo_prtnr_ed_v2": "parental_partner_education",
-    "demo_ed_v2": "participant_education"
+    #"demo_prtnr_ed_v2": "parental_partner_education",
+    #"demo_ed_v2": "participant_education"
 }
 
 # Hashmap for the demographic information being used from the Longitudinal Parent Demographics Survey that may change from baseline
@@ -165,21 +165,20 @@ qc_subjects = qc_df[['subjectkey', 'visit']].drop_duplicates()
 qc_subjects = qc_subjects.rename(columns={'subjectkey': 'participant_id', 'visit': 'session_id'})
 qc_subjects_sorted = qc_subjects.sort_values(by='participant_id')
 
+# NEW: Load the variable demographic information from the NDA Dictionary's ABCD Longitudinal Parent Demographics Survey
+nda_dict_demo_long_df = pd.read_csv(nda_dict_demo_long_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_long_map.keys()).rename(columns=nda_dict_demo_long_map)
+# NEW: Merge the participants_df with the nda_dict_demo_df on participant_id and session_id
+participants_df = pd.merge(qc_subjects_sorted, nda_dict_demo_long_df, how='left', on=['participant_id', 'session_id'])
+
 # Load the tabulated data file into a pandas dataframe using the tabulated_data_map keys as the columns
 tabulated_data_df = pd.read_csv(tabulated_data_path, usecols=tabulated_data_map.keys()).rename(columns=tabulated_data_map)
 # Merge the qc_subjects dataframe with the tabulated_data_df on participant_id and session_id
-participants_df = pd.merge(qc_subjects_sorted, tabulated_data_df, how='left', on=['participant_id', 'session_id'])
+participants_df = pd.merge(participants_df, tabulated_data_df, how='left', on=['participant_id', 'session_id'])
 
 # NEW: Load the invariable demographic information from the NDA Dictionary's ABCD Parent Demographics Survey
 nda_dict_demo_df = pd.read_csv(nda_dict_demo_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_map.keys()).rename(columns=nda_dict_demo_map)
 # NEW: Merge the participants_df with the nda_dict_demo_df on participant_id
 participants_df = pd.merge(participants_df, nda_dict_demo_df, how='left', on=['participant_id', 'session_id'])
-
-# NEW: Load the variable demographic information from the NDA Dictionary's ABCD Longitudinal Parent Demographics Survey
-nda_dict_demo_long_df = pd.read_csv(nda_dict_demo_long_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_long_map.keys()).rename(columns=nda_dict_demo_long_map)
-# NEW: Merge the participants_df with the nda_dict_demo_df on participant_id and session_id
-participants_df = pd.merge(participants_df, nda_dict_demo_long_df, how='left', on=['participant_id', 'session_id'])
-
 
 # NEW: Load the proper twin information from the NDA Dictionary's ABCD Family History Assessment Part 1
 nda_dict_twin_df = pd.read_csv(nda_dict_twin_path, delimiter='\t', skiprows=[1], usecols=nda_dict_twin_map.keys()).rename(columns=nda_dict_twin_map)
@@ -225,8 +224,8 @@ for x in c3165_subject_list:
     participants_df.loc[(participants_df['participant_id'] == x[0]) & (participants_df['session_id'] == x[1]), 'collection_3165'] = 1
 
 # Load the matched_groups variable from the original participants.tsv into a pandas dataframe ?? only use participant_id ??
-matched_groups_df = pd.read_csv(original_participants_path, delimiter='\t', usecols=['participant_id', 'session_id', 'matched_group'])
-participants_df = pd.merge(participants_df, matched_groups_df, how='left', on=['participant_id', 'session_id'])
+matched_groups_df = pd.read_csv(original_participants_path, delimiter='\t', usecols=['participant_id', 'matched_group'])
+participants_df = pd.merge(participants_df, matched_groups_df, how='left', on=['participant_id'])
 
 
 # !! Get list of all unique mri_info_manufacturer, mri_info_manufacturersmn, and mri_info_softwareversion !!
@@ -326,13 +325,6 @@ participants_df["anesthesia_exposure"] = participants_df["anesthesia_exposure"].
 #participants_df["pc2"] = participants_df["pc2"].fillna(888)
 #participants_df["pc3"] = participants_df["pc3"].fillna(888)
 
-
-
-
-
-#compare columns with participants.json
-#sort from A to Z based on subject ID?
-
 reordered_columns = [
     "participant_id", 
     "session_id", 
@@ -377,8 +369,6 @@ reordered_columns = [
 
 #reorder columns to match older versions of participants tsv
 participants_df_reordered = participants_df[reordered_columns]
-
-# ?? sort from A to Z by subject_id ??
 
 print(participants_df_reordered)
 
