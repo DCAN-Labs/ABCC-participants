@@ -28,7 +28,7 @@ nda_dict_twin_path = '/home/rando149/shared/data/Collection_3165_Supporting_Docu
 # NDA Dictionary's site information path
 nda_dict_site_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/abcd_lt01.txt'
 # NDA Dictionary's anesthesia exposure infromation path 
-nda_dict_anes_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/abcd_medhxss01.txt'
+nda_dict_anes_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/abcd_lssmh01.txt'
 # MRI Scanner info origin has been changed from this url(https://nda.nih.gov/data_structure.html?short_name=abcd_mri01) to the NDA Dictionary source(ABCD MRI Info)
 mri_info_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/abcd_mri01.txt'
 # QC info origin: https://nda.nih.gov/data_structure.html?short_name=abcd_fastqc01
@@ -50,10 +50,10 @@ tabulated_data_map = {
 }
 
 # Hashmap for the demographic information being used from the NDA Dictionary ABCD Parent Demographics Survey that is invariable
-nda_dict_demo_map = {
+nda_dict_demo_map_invariable = {
     "subjectkey": "participant_id",
-    "eventname": "session_id",
-    #"interview_age": "age",
+    #"eventname": "session_id", trying without session_id
+    #"interview_age": "age", # checking
     "demo_sex_v2": "sex",
     "demo_race_a_p___10": "White",
     "demo_race_a_p___11": "Black/African American",
@@ -74,11 +74,42 @@ nda_dict_demo_map = {
     "demo_race_a_p___77": "Refuse to Answer",
     "demo_race_a_p___99": "Don't Know",
     "demo_ethn_v2": "Do you consider the child Hispanic/Latino/Latina?",
-    #"demo_comb_income_v2": "income",
-    #"demo_prnt_ed_v2": "parental_education_1",
+    #"demo_comb_income_v2": "income", # checking
+    #"demo_prnt_ed_v2": "parental_education_1", # checking
     # !! do we want parental_partner_education information?? !!
-    #"demo_prtnr_ed_v2": "parental_partner_education",
-    #"demo_ed_v2": "participant_education"
+    #"demo_prtnr_ed_v2": "parental_partner_education", # checking
+    #"demo_ed_v2": "participant_education" # checking
+}
+
+nda_dict_demo_map_baseline = {
+    "subjectkey": "participant_id",
+    "eventname": "session_id", 
+    #"interview_age": "age", # checking
+    #"demo_sex_v2": "sex",
+    #"demo_race_a_p___10": "White",
+    #"demo_race_a_p___11": "Black/African American",
+    #"demo_race_a_p___12": "American Indian, Native American",
+    #"demo_race_a_p___13": "Alaska Native",
+    #"demo_race_a_p___14": "Native Hawaiian",
+    #"demo_race_a_p___15": "Guamanian",
+    #"demo_race_a_p___16": "Samoan",
+    #"demo_race_a_p___17": "Other Pacific Islander",
+    #"demo_race_a_p___18": "Asian Indian",
+    #"demo_race_a_p___19": "Chinese",
+    #"demo_race_a_p___20": "Filipino",
+    #"demo_race_a_p___21": "Japanese",
+    #"demo_race_a_p___22": "Korean",
+    #"demo_race_a_p___23": "Vietnamese",
+    #"demo_race_a_p___24": "Other Asian",
+    #"demo_race_a_p___25": "Other Race",
+    #"demo_race_a_p___77": "Refuse to Answer",
+    #"demo_race_a_p___99": "Don't Know",
+    #"demo_ethn_v2": "Do you consider the child Hispanic/Latino/Latina?",
+    "demo_comb_income_v2": "income", # checking
+    "demo_prnt_ed_v2": "parental_education_1", # checking
+    # !! do we want parental_partner_education information?? !!
+    "demo_prtnr_ed_v2": "parental_partner_education", # checking
+    "demo_ed_v2": "participant_education" # checking
 }
 
 # Hashmap for the demographic information being used from the Longitudinal Parent Demographics Survey that may change from baseline
@@ -95,7 +126,7 @@ nda_dict_demo_long_map = {
 # Hashmap for twin information from the NDA Dictionary's ABCD Family History Assessment Part 1
 nda_dict_twin_map = {
     "subjectkey": "participant_id",
-    "eventname": "session_id",
+    #"eventname": "session_id",
     "fhx_3c_sibs_same_birth": "siblings_twins"
 }
 
@@ -110,7 +141,7 @@ nda_dict_site_map = {
 nda_dict_anes_map = {
     "subjectkey": "participant_id",
     "eventname": "session_id",
-    "medhx_ss_9b_p": "anesthesia_exposure"
+    "medhx_ss_9b_p_l": "anesthesia_exposure"
 }
 
 # Columns populated by querying the sidecar json after dcm2bids OR from https://nda.nih.gov/data_structure.html?short_name=abcd_mri01
@@ -160,30 +191,42 @@ bids_session_dict = {
 # Load the fastqc01.tsv file into a pandas dataframe, skip the second descriptor row, and rename subjectkey to participant_id and visit to session_id
 qc_df = pd.read_csv(fastqc01_path, delimiter='\t', skiprows=[1])
 # Return a dataframe of all unique subjectkey and visit from the qc_df
-qc_subjects = qc_df[['subjectkey', 'visit']].drop_duplicates()
+qc_subjects = qc_df[['subjectkey', 'visit']].drop_duplicates() # trying without visit id
 # Rename the subjectkey and visit columns to participant_id and session_id and sort by particpant_id
-qc_subjects = qc_subjects.rename(columns={'subjectkey': 'participant_id', 'visit': 'session_id'})
-qc_subjects_sorted = qc_subjects.sort_values(by='participant_id')
-
-# NEW: Load the variable demographic information from the NDA Dictionary's ABCD Longitudinal Parent Demographics Survey
-nda_dict_demo_long_df = pd.read_csv(nda_dict_demo_long_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_long_map.keys()).rename(columns=nda_dict_demo_long_map)
-# NEW: Merge the participants_df with the nda_dict_demo_df on participant_id and session_id
-participants_df = pd.merge(qc_subjects_sorted, nda_dict_demo_long_df, how='left', on=['participant_id', 'session_id'])
+qc_subjects = qc_subjects.rename(columns={'subjectkey': 'participant_id', 'visit': 'session_id'}) # trying without visit id
+#qc_subjects_sorted = qc_subjects.sort_values(by='participant_id')
 
 # Load the tabulated data file into a pandas dataframe using the tabulated_data_map keys as the columns
 tabulated_data_df = pd.read_csv(tabulated_data_path, usecols=tabulated_data_map.keys()).rename(columns=tabulated_data_map)
 # Merge the qc_subjects dataframe with the tabulated_data_df on participant_id and session_id
-participants_df = pd.merge(participants_df, tabulated_data_df, how='left', on=['participant_id', 'session_id'])
+participants_df = pd.merge(qc_subjects, tabulated_data_df, how='left', on=['participant_id', 'session_id'])
+
+# NEW: Load the variable demographic information from the NDA Dictionary's ABCD Longitudinal Parent Demographics Survey
+nda_dict_demo_long_df = pd.read_csv(nda_dict_demo_long_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_long_map.keys()).rename(columns=nda_dict_demo_long_map)
+# NEW: Merge the participants_df with the nda_dict_demo_df on participant_id and session_id
+participants_df = pd.merge(participants_df, nda_dict_demo_long_df, how='outer', on=['participant_id', 'session_id'])
 
 # NEW: Load the invariable demographic information from the NDA Dictionary's ABCD Parent Demographics Survey
-nda_dict_demo_df = pd.read_csv(nda_dict_demo_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_map.keys()).rename(columns=nda_dict_demo_map)
+nda_dict_demo_df_invariable = pd.read_csv(nda_dict_demo_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_map_invariable.keys()).rename(columns=nda_dict_demo_map_invariable)
 # NEW: Merge the participants_df with the nda_dict_demo_df on participant_id
-participants_df = pd.merge(participants_df, nda_dict_demo_df, how='left', on=['participant_id', 'session_id'])
+participants_df = pd.merge(participants_df, nda_dict_demo_df_invariable, how='left', on=['participant_id'])
+
+# NEW: Load the baseline demographic information from the NDA Dictionary's ABCD Parent Demographics Survey
+nda_dict_demo_df_baseline = pd.read_csv(nda_dict_demo_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_map_baseline.keys()).rename(columns=nda_dict_demo_map_baseline)
+# NEW: Merge the participants_df with the nda_dict_demo_df on participant_id, below didnt work
+participants_df = pd.merge(participants_df, nda_dict_demo_df_baseline, how='left', on=['participant_id', 'session_id'], suffixes=('', '_new'))
+overwrite_columns = ['participant_education', 'parental_education_1', 'parental_partner_education', 'income']
+# Update the columns with new values from df2 (columns with '_new' suffix)
+for col in overwrite_columns:
+    mask = ~participants_df[col + '_new'].isnull()  # Only update if new value is not NaN
+    participants_df.loc[mask, col] = participants_df.loc[mask, col + '_new']
+# Drop the columns with '_new' suffix
+participants_df.drop([col + '_new' for col in overwrite_columns], axis=1, inplace=True)
 
 # NEW: Load the proper twin information from the NDA Dictionary's ABCD Family History Assessment Part 1
 nda_dict_twin_df = pd.read_csv(nda_dict_twin_path, delimiter='\t', skiprows=[1], usecols=nda_dict_twin_map.keys()).rename(columns=nda_dict_twin_map)
 # NEW: Merge the participants_df with the nda_dict_twin_df on participant_id and session_id
-participants_df = pd.merge(participants_df, nda_dict_twin_df, how='left', on=['participant_id', 'session_id'])
+participants_df = pd.merge(participants_df, nda_dict_twin_df, how='left', on=['participant_id'])
 
 # NEW: Load the proper site information from the NDA Dictionary
 nda_dict_site_df = pd.read_csv(nda_dict_site_path, delimiter='\t', skiprows=[1], usecols=nda_dict_site_map.keys()).rename(columns=nda_dict_site_map)
