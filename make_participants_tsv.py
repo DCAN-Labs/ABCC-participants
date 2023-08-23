@@ -2,7 +2,7 @@
 
 import pandas as pd
 import re
-#import numpy as np
+import numpy as np
 
 pd.set_option('display.max_columns', None)
 pd.set_option('expand_frame_repr', False)
@@ -75,7 +75,7 @@ nda_dict_demo_map = {
     "demo_race_a_p___99": "Don't Know",
     "demo_ethn_v2": "Do you consider the child Hispanic/Latino/Latina?",
     #"demo_comb_income_v2": "income",
-    #"demo_prnt_ed_v2": "parental_education",
+    #"demo_prnt_ed_v2": "parental_education_1",
     # !! do we want parental_partner_education information?? !!
     #"demo_prtnr_ed_v2": "parental_partner_education",
     #"demo_ed_v2": "participant_education"
@@ -87,7 +87,7 @@ nda_dict_demo_long_map = {
     "eventname": "session_id",
     "interview_age": "age",
     "demo_ed_v2_l": "participant_education",
-    "demo_prnt_ed_v2_l": "parental_education",
+    "demo_prnt_ed_v2_l": "parental_education_1",
     "demo_prtnr_ed_v2_l": "parental_partner_education",
     "demo_comb_income_v2_l": "income"
 }
@@ -196,7 +196,7 @@ nda_dict_anes_df = pd.read_csv(nda_dict_anes_path, delimiter='\t', skiprows=[1],
 participants_df = pd.merge(participants_df, nda_dict_anes_df, how='left', on=['participant_id', 'session_id'])
 
 # Load the mri_info file into a pandas dataframe using the mri_info_map keys as the columns
-mri_info_df = pd.read_csv(mri_info_path, delimiter='\t', usecols=mri_info_map.keys()).rename(columns=mri_info_map)
+mri_info_df = pd.read_csv(mri_info_path, delimiter='\t', skiprows=[1], usecols=mri_info_map.keys()).rename(columns=mri_info_map)
 # Merge the participants_df with the mri_info_df on participant_id and session_id
 participants_df = pd.merge(participants_df, mri_info_df, how='left', on=['participant_id', 'session_id'])
 
@@ -286,8 +286,32 @@ participants_df["site"] = participants_df["site"].fillna(888)
 participants_df["scanner_manufacturer"] = participants_df["scanner_manufacturer"].fillna(888)
 #fill scanner_model NaNs with integer 888
 participants_df["scanner_model"] = participants_df["scanner_model"].fillna(888)
-#fill scanner_software NaNs with integer 888
+# Rename scanner_software values to match previous participants.tsv fill NaNs with integer 888 
 participants_df["scanner_software"] = participants_df["scanner_software"].fillna(888)
+scanner_software_dict = {
+    "syngo MR E11": "syngo MR E11",
+    "5.3.05.3.0.0": "[5.3.0, 5.3.0.0]",
+    "5.3.05.3.0.3": "[5.3.0, 5.3.0.3]",
+    "5.3.15.3.1.0": "[5.3.1, 5.3.1.0]",
+    "5.3.15.3.1.1": "[5.3.1, 5.3.1.1]",
+    "5.3.15.3.1.2": "[5.3.1, 5.3.1.2]",
+    "5.3.15.3.1.3": "[5.3.1, 5.3.1.3]",
+    "5.4.05.4.0.1": "[5.4.0, 5.4.0.1]",
+    "5.4.15.4.1.1": "[5.4.1, 5.4.1.1]",
+    "5.6.15.6.1.1": "[5.6.1, 5.6.1.1]",
+    "25LXMR Software release:DV25.0_R02_1549.b": "[25, LX, MR Software release:DV25.0_R02_1549.b]",
+    "27LXMR Software release:DV25.1_R01_1617.b": "[27, LX, MR Software release:DV25.1_R01_1617.b]",
+    "27LXMR Software release:DV26.0_EB_1707.b": "[27, LX, MR Software release:DV26.0_EB_1707.b]",
+    "27LXMR Software release:DV26.0_R01_1725.a": "[27, LX, MR Software release:DV26.0_R01_1725.a]",
+    "27LXMR Software release:DV26.0_R02_1810.b": "[27, LX, MR Software release:DV26.0_R02_1810.b]",
+    "27LXMR Software release:DV26.0_R03_1831.b": "[27, LX, MR Software release:DV26.0_R03_1831.b]",
+    "27LXMR Software release:DV26.0_R05_2008.a": "[27, LX, MR Software release:DV26.0_R05_2008.a]",
+    "27Orchestra SDK": "[27, Orchestra SDK]",
+    888: 888
+}
+participants_df['scanner_software'] = participants_df['scanner_software'].apply(lambda x: scanner_software_dict[x])
+
+
 
 #make sure matched_group is an integer !! this may only be happening for year1 subject IDs !!
 participants_df["matched_group"] = participants_df["matched_group"].fillna(888)
@@ -308,9 +332,13 @@ participants_df["income"] = participants_df["income"].astype('int')
 participants_df["participant_education"] = participants_df["participant_education"].fillna(888)
 participants_df["participant_education"] = participants_df["participant_education"].astype('int')
 
-#cast parental_education as an integer and fill in NaNs with 888
-participants_df["parental_education"] = participants_df["parental_education"].fillna(888)
-participants_df["parental_education"] = participants_df["parental_education"].astype('int')
+# !! still need to triage this !!
+# Calculate max between parental_education_1 and parental_partner_education and save in new parental_education variable 
+participants_df["parental_education"] = participants_df.apply(lambda row: max(row["parental_education_1"], row["parental_partner_education"]), axis=1)
+
+#cast parental_education_1 as an integer and fill in NaNs with 888
+participants_df["parental_education_1"] = participants_df["parental_education_1"].fillna(888)
+participants_df["parental_education_1"] = participants_df["parental_education_1"].astype('int')
 
 #cast parental_partner_education as an integer and fill in NaNs with 888
 participants_df["parental_partner_education"] = participants_df["parental_partner_education"].fillna(888)
@@ -360,7 +388,6 @@ reordered_columns = [
     "income", 
     "participant_education", 
     "parental_education", 
-    "parental_partner_education", 
     "anesthesia_exposure",
     "pc1",
     "pc2",
