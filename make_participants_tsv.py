@@ -204,7 +204,8 @@ participants_df = pd.merge(qc_subjects, tabulated_data_df, how='left', on=['part
 # NEW: Load the variable demographic information from the NDA Dictionary's ABCD Longitudinal Parent Demographics Survey
 nda_dict_demo_long_df = pd.read_csv(nda_dict_demo_long_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_long_map.keys()).rename(columns=nda_dict_demo_long_map)
 # NEW: Merge the participants_df with the nda_dict_demo_df on participant_id and session_id
-participants_df = pd.merge(participants_df, nda_dict_demo_long_df, how='outer', on=['participant_id', 'session_id'])
+participants_df = pd.merge(participants_df, nda_dict_demo_long_df, how='left', on=['participant_id', 'session_id'])
+#participants_df = pd.merge(participants_df, nda_dict_demo_long_df, how='outer', on=['participant_id', 'session_id'])
 
 # NEW: Load the invariable demographic information from the NDA Dictionary's ABCD Parent Demographics Survey
 nda_dict_demo_df_invariable = pd.read_csv(nda_dict_demo_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_map_invariable.keys()).rename(columns=nda_dict_demo_map_invariable)
@@ -266,7 +267,7 @@ for x in c3165_subject_list:
     # Set 'collection_3165' to 1 where the participant_id and session_id match x[0] and x[1] in participants_df
     participants_df.loc[(participants_df['participant_id'] == x[0]) & (participants_df['session_id'] == x[1]), 'collection_3165'] = 1
 
-# Load the matched_groups variable from the original participants.tsv into a pandas dataframe ?? only use participant_id ??
+# Load the matched_groups variable from the original participants.tsv into a pandas dataframe ?? only use participant_id ?? so far most likely need session id
 matched_groups_df = pd.read_csv(original_participants_path, delimiter='\t', usecols=['participant_id', 'matched_group'])
 participants_df = pd.merge(participants_df, matched_groups_df, how='left', on=['participant_id'])
 
@@ -378,14 +379,12 @@ participants_df["participant_education"] = participants_df["participant_educatio
 # !! still need to triage this !!
 # Calculate max between parental_education_1 and parental_partner_education and save in new parental_education variable 
 participants_df["parental_education"] = participants_df.apply(lambda row: max(row["parental_education_1"], row["parental_partner_education"]), axis=1)
-
+participants_df["parental_education"] = participants_df["parental_education"].fillna(888)
+participants_df["parental_education"] = participants_df["parental_education"].astype('int')
 #cast parental_education_1 as an integer and fill in NaNs with 888
-participants_df["parental_education_1"] = participants_df["parental_education_1"].fillna(888)
-participants_df["parental_education_1"] = participants_df["parental_education_1"].astype('int')
-
 #cast parental_partner_education as an integer and fill in NaNs with 888
-participants_df["parental_partner_education"] = participants_df["parental_partner_education"].fillna(888)
-participants_df["parental_partner_education"] = participants_df["parental_partner_education"].astype('int')
+#participants_df["parental_partner_education"] = participants_df["parental_partner_education"].fillna(888)
+#participants_df["parental_partner_education"] = participants_df["parental_partner_education"].astype('int')
 
 #cast anesthesia_exposure as an integer and fill in NaNs with 888
 participants_df["anesthesia_exposure"] = participants_df["anesthesia_exposure"].fillna(888)
@@ -442,8 +441,11 @@ participants_df_reordered = participants_df[reordered_columns]
 
 print(participants_df_reordered)
 
+participants_df_reordered_sorted = participants_df_reordered.sort_values(by='participant_id')
+
+print(participants_df_reordered_sorted)
 # !! may need to sort a to z by participant id !!
-participants_df_reordered.to_csv('/home/rando149/shared/data/Collection_3165_Supporting_Documentation/participants_v1.0.3/participants.tsv', sep='\t', index=False)
+participants_df_reordered_sorted.to_csv('/home/rando149/shared/data/Collection_3165_Supporting_Documentation/participants_v1.0.3/participants.tsv', sep='\t', index=False)
 
 
 
