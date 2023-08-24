@@ -2,7 +2,7 @@
 
 import pandas as pd
 import re
-import numpy as np
+#import numpy as np
 
 pd.set_option('display.max_columns', None)
 pd.set_option('expand_frame_repr', False)
@@ -442,7 +442,8 @@ participants_df_reordered = participants_df[reordered_columns]
 
 print(participants_df_reordered)
 
-
+# !! may need to sort a to z by participant id !!
+participants_df_reordered.to_csv('/home/rando149/shared/data/Collection_3165_Supporting_Documentation/participants_v1.0.3/participants.tsv', sep='\t', index=False)
 
 
 
