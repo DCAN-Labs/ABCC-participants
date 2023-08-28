@@ -2,7 +2,6 @@
 
 import pandas as pd
 import re
-#import numpy as np
 
 pd.set_option('display.max_columns', None)
 pd.set_option('expand_frame_repr', False)
@@ -18,10 +17,11 @@ pd.set_option('expand_frame_repr', False)
 # Download Tabulated Datasets from NDA
 #   Do not load this entire file into a pandas dataframe, it will take too much memory instead selectively load necessary columns. It is currently being used for handedness information and pc scores
 #   The ABCD4.0_MASTER_DATA_FILE is a compilation of data sources. Figure out the actual data sources within the Tabulated BDatasets and Raw Behavioral Data: https://nda.nih.gov/general-query.html?q=query=featured-datasets:Adolescent%20Brain%20Cognitive%20Development%20Study%20(ABCD)
+#   Old source: NeuroCog principal component scores: search for pc1, pc2, and pc3 in https://deap.nimhda.org/applications/Ontology/hierarchy.php?entry=display
 tabulated_data_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/ABCD4.0_MASTER_DATA_FILE.csv'
-# NDA Dictionary's ABCD Parent Demographics Survey is currently being used for demographic information that is invariable. 
+# NDA Dictionary's ABCD Parent Demographics Survey is currently being used for demographic information that is invariable
 nda_dict_demo_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/pdem02.txt'
-# NDA Dictionary's ABCD Longitudinal Parent Demographics Survey contains demographic information that will have changed since baseline.
+# NDA Dictionary's ABCD Longitudinal Parent Demographics Survey contains demographic information that will have changed since baseline
 nda_dict_demo_long_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/abcd_lpds01.txt'
 # NDA Dictionary's ABCD Family History Assessment Part 1 is being used for twin information
 nda_dict_twin_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/fhxp102.txt'
@@ -52,8 +52,6 @@ tabulated_data_map = {
 # Hashmap for the demographic information being used from the NDA Dictionary ABCD Parent Demographics Survey that is invariable
 nda_dict_demo_map_invariable = {
     "subjectkey": "participant_id",
-    #"eventname": "session_id", trying without session_id
-    #"interview_age": "age", # checking
     "demo_sex_v2": "sex",
     "demo_race_a_p___10": "White",
     "demo_race_a_p___11": "Black/African American",
@@ -73,43 +71,17 @@ nda_dict_demo_map_invariable = {
     "demo_race_a_p___25": "Other Race",
     "demo_race_a_p___77": "Refuse to Answer",
     "demo_race_a_p___99": "Don't Know",
-    "demo_ethn_v2": "Do you consider the child Hispanic/Latino/Latina?",
-    #"demo_comb_income_v2": "income", # checking
-    #"demo_prnt_ed_v2": "parental_education_1", # checking
-    # !! do we want parental_partner_education information?? !!
-    #"demo_prtnr_ed_v2": "parental_partner_education", # checking
-    #"demo_ed_v2": "participant_education" # checking
+    "demo_ethn_v2": "Do you consider the child Hispanic/Latino/Latina?"
 }
 
+# Hashmap for demographic information that is variable but baseline info is only avaible from NDA Dictionary ABCD Parent Demographics Survey
 nda_dict_demo_map_baseline = {
     "subjectkey": "participant_id",
     "eventname": "session_id", 
-    #"interview_age": "age", # checking
-    #"demo_sex_v2": "sex",
-    #"demo_race_a_p___10": "White",
-    #"demo_race_a_p___11": "Black/African American",
-    #"demo_race_a_p___12": "American Indian, Native American",
-    #"demo_race_a_p___13": "Alaska Native",
-    #"demo_race_a_p___14": "Native Hawaiian",
-    #"demo_race_a_p___15": "Guamanian",
-    #"demo_race_a_p___16": "Samoan",
-    #"demo_race_a_p___17": "Other Pacific Islander",
-    #"demo_race_a_p___18": "Asian Indian",
-    #"demo_race_a_p___19": "Chinese",
-    #"demo_race_a_p___20": "Filipino",
-    #"demo_race_a_p___21": "Japanese",
-    #"demo_race_a_p___22": "Korean",
-    #"demo_race_a_p___23": "Vietnamese",
-    #"demo_race_a_p___24": "Other Asian",
-    #"demo_race_a_p___25": "Other Race",
-    #"demo_race_a_p___77": "Refuse to Answer",
-    #"demo_race_a_p___99": "Don't Know",
-    #"demo_ethn_v2": "Do you consider the child Hispanic/Latino/Latina?",
-    "demo_comb_income_v2": "income", # checking
-    "demo_prnt_ed_v2": "parental_education_1", # checking
-    # !! do we want parental_partner_education information?? !!
-    "demo_prtnr_ed_v2": "parental_partner_education", # checking
-    "demo_ed_v2": "participant_education" # checking
+    "demo_comb_income_v2": "income", 
+    "demo_prnt_ed_v2": "parental_education_1",
+    "demo_prtnr_ed_v2": "parental_partner_education",
+    "demo_ed_v2": "participant_education"
 }
 
 # Hashmap for the demographic information being used from the Longitudinal Parent Demographics Survey that may change from baseline
@@ -126,7 +98,6 @@ nda_dict_demo_long_map = {
 # Hashmap for twin information from the NDA Dictionary's ABCD Family History Assessment Part 1
 nda_dict_twin_map = {
     "subjectkey": "participant_id",
-    #"eventname": "session_id",
     "fhx_3c_sibs_same_birth": "siblings_twins"
 }
 
@@ -161,14 +132,6 @@ dcan_data_list = [
     "matched_groups"
 ]
 
-# NeuroCog principal component scores: search for pc1, pc2, and pc3 in https://deap.nimhda.org/applications/Ontology/hierarchy.php?entry=display
-# !! Currently not being utilized. Cannot access the linked url above !! 
-#pc_map = {
-#    "pc1": "neurocog_pc1.bl",
-#    "pc2": "neurocog_pc2.bl",
-#    "pc3": "eurocog_pc3.bl"
-#}
-
 # Hashmap of session variable in the Tabulated Dataset to BIDS format for participants.tsv
 bids_session_dict = {
     'baseline_year_1_arm_1': 'ses-baselineYear1Arm1',
@@ -182,61 +145,53 @@ bids_session_dict = {
     '4_year_follow_up_y_arm_1': 'ses-4YearFollowUpYArm1',
 }
 
-# Based off of sex the child was assigned at birth, may not need this though since its already binarized
-#sex_dict = {
-#    'M': 1,
-#    'F': 2,
-#}
-
 # Load the fastqc01.tsv file into a pandas dataframe, skip the second descriptor row, and rename subjectkey to participant_id and visit to session_id
 qc_df = pd.read_csv(fastqc01_path, delimiter='\t', skiprows=[1])
 # Return a dataframe of all unique subjectkey and visit from the qc_df
-qc_subjects = qc_df[['subjectkey', 'visit']].drop_duplicates() # trying without visit id
-# Rename the subjectkey and visit columns to participant_id and session_id and sort by particpant_id
-qc_subjects = qc_subjects.rename(columns={'subjectkey': 'participant_id', 'visit': 'session_id'}) # trying without visit id
-#qc_subjects_sorted = qc_subjects.sort_values(by='participant_id')
+qc_subjects = qc_df[['subjectkey', 'visit']].drop_duplicates() 
+# Rename the subjectkey and visit columns to participant_id and session_id
+qc_subjects = qc_subjects.rename(columns={'subjectkey': 'participant_id', 'visit': 'session_id'})
 
 # Load the tabulated data file into a pandas dataframe using the tabulated_data_map keys as the columns
 tabulated_data_df = pd.read_csv(tabulated_data_path, usecols=tabulated_data_map.keys()).rename(columns=tabulated_data_map)
 # Merge the qc_subjects dataframe with the tabulated_data_df on participant_id and session_id
 participants_df = pd.merge(qc_subjects, tabulated_data_df, how='left', on=['participant_id', 'session_id'])
 
-# NEW: Load the variable demographic information from the NDA Dictionary's ABCD Longitudinal Parent Demographics Survey
+# Load the variable demographic information from the NDA Dictionary's ABCD Longitudinal Parent Demographics Survey
 nda_dict_demo_long_df = pd.read_csv(nda_dict_demo_long_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_long_map.keys()).rename(columns=nda_dict_demo_long_map)
-# NEW: Merge the participants_df with the nda_dict_demo_df on participant_id and session_id
+# Merge the participants_df with the nda_dict_demo_df on participant_id and session_id
 participants_df = pd.merge(participants_df, nda_dict_demo_long_df, how='left', on=['participant_id', 'session_id'])
-#participants_df = pd.merge(participants_df, nda_dict_demo_long_df, how='outer', on=['participant_id', 'session_id'])
 
-# NEW: Load the invariable demographic information from the NDA Dictionary's ABCD Parent Demographics Survey
+# Load the invariable demographic information from the NDA Dictionary's ABCD Parent Demographics Survey
 nda_dict_demo_df_invariable = pd.read_csv(nda_dict_demo_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_map_invariable.keys()).rename(columns=nda_dict_demo_map_invariable)
-# NEW: Merge the participants_df with the nda_dict_demo_df on participant_id
+# Merge the participants_df with the nda_dict_demo_df on participant_id
 participants_df = pd.merge(participants_df, nda_dict_demo_df_invariable, how='left', on=['participant_id'])
 
-# NEW: Load the baseline demographic information from the NDA Dictionary's ABCD Parent Demographics Survey
+# Load the baseline demographic information from the NDA Dictionary's ABCD Parent Demographics Survey
 nda_dict_demo_df_baseline = pd.read_csv(nda_dict_demo_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_map_baseline.keys()).rename(columns=nda_dict_demo_map_baseline)
-# NEW: Merge the participants_df with the nda_dict_demo_df on participant_id, below didnt work
+# Merge the participants_df with the nda_dict_demo_df on participant_id
 participants_df = pd.merge(participants_df, nda_dict_demo_df_baseline, how='left', on=['participant_id', 'session_id'], suffixes=('', '_new'))
 overwrite_columns = ['participant_education', 'parental_education_1', 'parental_partner_education', 'income']
-# Update the columns with new values from df2 (columns with '_new' suffix)
+# Update the columns with new values from participants_df (columns with '_new' suffix)
 for col in overwrite_columns:
     mask = ~participants_df[col + '_new'].isnull()  # Only update if new value is not NaN
     participants_df.loc[mask, col] = participants_df.loc[mask, col + '_new']
 # Drop the columns with '_new' suffix
 participants_df.drop([col + '_new' for col in overwrite_columns], axis=1, inplace=True)
 
-# NEW: Load the proper twin information from the NDA Dictionary's ABCD Family History Assessment Part 1
+# Load the proper twin information from the NDA Dictionary's ABCD Family History Assessment Part 1
 nda_dict_twin_df = pd.read_csv(nda_dict_twin_path, delimiter='\t', skiprows=[1], usecols=nda_dict_twin_map.keys()).rename(columns=nda_dict_twin_map)
-# NEW: Merge the participants_df with the nda_dict_twin_df on participant_id and session_id
+# Merge the participants_df with the nda_dict_twin_df on participant_id
 participants_df = pd.merge(participants_df, nda_dict_twin_df, how='left', on=['participant_id'])
 
-# NEW: Load the proper site information from the NDA Dictionary
+# Load the proper site information from the NDA Dictionary
 nda_dict_site_df = pd.read_csv(nda_dict_site_path, delimiter='\t', skiprows=[1], usecols=nda_dict_site_map.keys()).rename(columns=nda_dict_site_map)
-# NEW: Merge the participants_df with the nda_dict_site_df on participant_id and session_id
+# Merge the participants_df with the nda_dict_site_df on participant_id and session_id
 participants_df = pd.merge(participants_df, nda_dict_site_df, how='left', on=['participant_id', 'session_id'])
 
-# NEW: Load the proper anesthesia exposure infromation from the NDA Dictionary
+# Load the proper anesthesia exposure infromation from the NDA Dictionary
 nda_dict_anes_df = pd.read_csv(nda_dict_anes_path, delimiter='\t', skiprows=[1], usecols=nda_dict_anes_map.keys()).rename(columns=nda_dict_anes_map)
-# NEW: Merge the participants_df with the nda_dict_anes_df on participant_id and session_id
+# Merge the participants_df with the nda_dict_anes_df on participant_id and session_id
 participants_df = pd.merge(participants_df, nda_dict_anes_df, how='left', on=['participant_id', 'session_id'])
 
 # Load the mri_info file into a pandas dataframe using the mri_info_map keys as the columns
@@ -260,25 +215,20 @@ def extract_subject_session(x):
     return subject, session
 
 c3165_subject_list = c3165_manifest_df['associated_file'].apply(lambda x: extract_subject_session(x)).tolist()
-# return unique elements of c3165_subject_list
+# Return unique elements of c3165_subject_list
 c3165_subject_list = list(set(c3165_subject_list))
 
 for x in c3165_subject_list:
     # Set 'collection_3165' to 1 where the participant_id and session_id match x[0] and x[1] in participants_df
     participants_df.loc[(participants_df['participant_id'] == x[0]) & (participants_df['session_id'] == x[1]), 'collection_3165'] = 1
 
-# Load the matched_groups variable from the original participants.tsv into a pandas dataframe ?? only use participant_id ?? so far most likely need session id
-matched_groups_df = pd.read_csv(original_participants_path, delimiter='\t', usecols=['participant_id', 'matched_group'])
-participants_df = pd.merge(participants_df, matched_groups_df, how='left', on=['participant_id'])
+# Load the matched_groups variable from the original participants.tsv into a pandas dataframe and drop dupilcate participant ids
+matched_groups_df = pd.read_csv(original_participants_path, delimiter='\t', usecols=['participant_id', 'matched_group']) 
+matched_groups_df_unique = matched_groups_df[['participant_id', 'matched_group']].drop_duplicates() 
+participants_df = pd.merge(participants_df, matched_groups_df_unique, how='left', on=['participant_id'])
 
-
-# !! Get list of all unique mri_info_manufacturer, mri_info_manufacturersmn, and mri_info_softwareversion !!
-# participants_df[["mri_info_manufacturer", "mri_info_manufacturersmn", "mri_info_softwareversion"]].drop_duplicates().sort_values(by=["mri_info_manufacturer", "mri_info_manufacturersmn", "mri_info_softwareversion"])
-
-
-def binarize_race_variables(participants_df):
-    #TODO
-    # !! convert the value where it matches to a 1 and 0 everywhere else !! is this what we want or should we keep NaN values separate??
+# Function to properly format each race information column
+def race_column_info(participants_df):
     column_header_names = (        
         "White",
         "Black/African American",
@@ -299,38 +249,45 @@ def binarize_race_variables(participants_df):
         "Refuse to Answer",
         "Don't Know",
         )
-    #repeat for all race demographic variables 
+    # Repeat for all race demographic columns 
     for value in column_header_names:
         participants_df[value] = participants_df[value].fillna(888)
         participants_df[value] = participants_df[value].astype('int')
 
     return
 
-# !! latinx needs to be converted like the demo variables !!
+# Convert latinx the same way as the other race columns
 participants_df["Do you consider the child Hispanic/Latino/Latina?"] = participants_df["Do you consider the child Hispanic/Latino/Latina?"].fillna(888)
 participants_df["Do you consider the child Hispanic/Latino/Latina?"] = participants_df["Do you consider the child Hispanic/Latino/Latina?"].astype('int')
 
-binarize_race_variables(participants_df)
+race_column_info(participants_df)
 
-#cast handedness as an integer 
+# Cast handedness as an integer and fill in NaNs with 888
 participants_df["handedness"] = participants_df["handedness"].fillna(888)
 participants_df["handedness"] = participants_df["handedness"].astype('int')
-#sibling_twins should be an integer
+
+# Cast sibling_twins as an integer and fill in NaNs with 888
 participants_df["siblings_twins"] = participants_df["siblings_twins"].fillna(888)
 participants_df["siblings_twins"] = participants_df["siblings_twins"].astype('int')
-#age should be an integer
-participants_df["age"] = participants_df["age"].fillna(777)
+
+# Cast age as an integer and fill in NaNs with 888
+participants_df["age"] = participants_df["age"].fillna(888)
 participants_df["age"] = participants_df["age"].astype('int')
-#make sure collection_3165 is an integer
+
+# Cast collection_3165 as an integer and fill in NaNs with 0
 participants_df["collection_3165"] = participants_df["collection_3165"].fillna(0)
 participants_df["collection_3165"] = participants_df["collection_3165"].astype('int')
-#fill site NaNs with integer 888
+
+# Fill site NaNs with integer 888
 participants_df["site"] = participants_df["site"].fillna(888)
-#fill scanner_manufacturer NaNs with integer 888
+
+# Fill scanner_manufacturer NaNs with integer 888
 participants_df["scanner_manufacturer"] = participants_df["scanner_manufacturer"].fillna(888)
-#fill scanner_model NaNs with integer 888
+
+# Fill scanner_model NaNs with integer 888
 participants_df["scanner_model"] = participants_df["scanner_model"].fillna(888)
-# Rename scanner_software values to match previous participants.tsv fill NaNs with integer 888 
+
+# Rename scanner_software values to match previous participants.tsv fill NaNs with 888 
 participants_df["scanner_software"] = participants_df["scanner_software"].fillna(888)
 scanner_software_dict = {
     "syngo MR E11": "syngo MR E11",
@@ -355,38 +312,28 @@ scanner_software_dict = {
 }
 participants_df['scanner_software'] = participants_df['scanner_software'].apply(lambda x: scanner_software_dict[x])
 
-
-
-#make sure matched_group is an integer !! this may only be happening for year1 subject IDs !!
+# Cast matched_group as an integer and fill in NaNs with 888
 participants_df["matched_group"] = participants_df["matched_group"].fillna(888)
 participants_df["matched_group"] = participants_df["matched_group"].astype('int')
 
-#need to check on sex information 
+# Cast sex information as an integer and fill in NaNs with 888
 participants_df["sex"] = participants_df["sex"].fillna(888)
 participants_df["sex"] = participants_df["sex"].astype('int')
 
-# ?? should we fill in age NaNs with 888 ??
-participants_df["age"] = participants_df["age"].fillna(888)
-
-#cast income as an integer and fill in NaNs with 888
+# Cast income as an integer and fill in NaNs with 888
 participants_df["income"] = participants_df["income"].fillna(888)
 participants_df["income"] = participants_df["income"].astype('int')
 
-#cast participant_education as an integer and fill in NaNs with 888
+# Cast participant_education as an integer and fill in NaNs with 888
 participants_df["participant_education"] = participants_df["participant_education"].fillna(888)
 participants_df["participant_education"] = participants_df["participant_education"].astype('int')
 
-# !! still need to triage this !!
-# Calculate max between parental_education_1 and parental_partner_education and save in new parental_education variable 
+# Calculate max between parental_education_1 and parental_partner_education and save in new parental_education variable, then cast as integer and fill in NaNs with 888
 participants_df["parental_education"] = participants_df.apply(lambda row: max(row["parental_education_1"], row["parental_partner_education"]), axis=1)
 participants_df["parental_education"] = participants_df["parental_education"].fillna(888)
 participants_df["parental_education"] = participants_df["parental_education"].astype('int')
-#cast parental_education_1 as an integer and fill in NaNs with 888
-#cast parental_partner_education as an integer and fill in NaNs with 888
-#participants_df["parental_partner_education"] = participants_df["parental_partner_education"].fillna(888)
-#participants_df["parental_partner_education"] = participants_df["parental_partner_education"].astype('int')
 
-#cast anesthesia_exposure as an integer and fill in NaNs with 888
+# Cast anesthesia_exposure as an integer and fill in NaNs with 888
 participants_df["anesthesia_exposure"] = participants_df["anesthesia_exposure"].fillna(888)
 participants_df["anesthesia_exposure"] = participants_df["anesthesia_exposure"].astype('int')
 
@@ -395,6 +342,7 @@ participants_df["anesthesia_exposure"] = participants_df["anesthesia_exposure"].
 #participants_df["pc2"] = participants_df["pc2"].fillna(888)
 #participants_df["pc3"] = participants_df["pc3"].fillna(888)
 
+# Reorder columns to match older versions of participants tsv
 reordered_columns = [
     "participant_id", 
     "session_id", 
@@ -435,25 +383,21 @@ reordered_columns = [
     "pc2",
     "pc3"
     ] 
-
-#reorder columns to match older versions of participants tsv
 participants_df_reordered = participants_df[reordered_columns]
 
 print(participants_df_reordered)
 
+# Sort rows A to Z by participant_id
 participants_df_reordered_sorted = participants_df_reordered.sort_values(by='participant_id')
 
 print(participants_df_reordered_sorted)
-# !! may need to sort a to z by participant id !!
+# Convert participants_df_reordered_sorted to tsv format
 participants_df_reordered_sorted.to_csv('/home/rando149/shared/data/Collection_3165_Supporting_Documentation/participants_v1.0.3/participants.tsv', sep='\t', index=False)
 
-
-
-
-#FUTURE: put hash maps into a json format, to make them more readable. Potentially combine them with the data dictionary 
-
 #FUTURE NOTES:
-
+#
+# put hash maps into a json format, to make them more readable. Potentially combine them with the data dictionary 
+# 
 # Data Dictionary Structure
 #User
 #{
@@ -472,7 +416,7 @@ participants_df_reordered_sorted.to_csv('/home/rando149/shared/data/Collection_3
 #        'subject_key': 'participant_id',
 #    }
 #}
-
+# 
 # Verify that all required columns exist
 #tabulated_datasets_df = pd.read_csv('/home/rando149/shared/data/Collection_3165_Supporting_Documentation/ABCD4.0_MASTER_DATA_FILE.csv')
 #for col in tabulated_data_map.keys():
