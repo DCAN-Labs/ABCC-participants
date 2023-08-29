@@ -27,8 +27,10 @@ nda_dict_demo_long_path = '/home/rando149/shared/data/Collection_3165_Supporting
 nda_dict_twin_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/fhxp102.txt'
 # NDA Dictionary's site information path
 nda_dict_site_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/abcd_lt01.txt'
-# NDA Dictionary's anesthesia exposure infromation path 
-nda_dict_anes_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/abcd_lssmh01.txt'
+# NDA Dictionary's longitudial anesthesia exposure infromation path 
+nda_dict_anes_long_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/abcd_lssmh01.txt'
+# NDA Dictionary's baseline anesthesia exposure information path
+nda_dict_anes_base_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/abcd_medhxss01.txt'
 # MRI Scanner info origin has been changed from this url(https://nda.nih.gov/data_structure.html?short_name=abcd_mri01) to the NDA Dictionary source(ABCD MRI Info)
 mri_info_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/abcd_mri01.txt'
 # QC info origin: https://nda.nih.gov/data_structure.html?short_name=abcd_fastqc01
@@ -108,11 +110,18 @@ nda_dict_site_map = {
     "site_id_l": "site"
 }
 
-# Hashmap for anesthesia exposure information from NDA Dictionary
-nda_dict_anes_map = {
+# Hashmap for longitudinal anesthesia exposure information from NDA Dictionary
+nda_dict_anes_long_map = {
     "subjectkey": "participant_id",
     "eventname": "session_id",
     "medhx_ss_9b_p_l": "anesthesia_exposure"
+}
+
+# Hashmap for baseline anesthesia exposure information from NDA Dictionary
+nda_dict_anes_base_map = {
+    "subjectkey": "participant_id",
+    "eventname": "session_id",
+    "medhx_ss_9b_p": "anesthesia_exposure"
 }
 
 # Columns populated by querying the sidecar json after dcm2bids OR from https://nda.nih.gov/data_structure.html?short_name=abcd_mri01
@@ -164,12 +173,12 @@ participants_df = pd.merge(participants_df, nda_dict_demo_long_df, how='left', o
 
 # Load the invariable demographic information from the NDA Dictionary's ABCD Parent Demographics Survey
 nda_dict_demo_df_invariable = pd.read_csv(nda_dict_demo_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_map_invariable.keys()).rename(columns=nda_dict_demo_map_invariable)
-# Merge the participants_df with the nda_dict_demo_df on participant_id
+# Merge the participants_df with the nda_dict_demo_df_invariable on participant_id
 participants_df = pd.merge(participants_df, nda_dict_demo_df_invariable, how='left', on=['participant_id'])
 
 # Load the baseline demographic information from the NDA Dictionary's ABCD Parent Demographics Survey
 nda_dict_demo_df_baseline = pd.read_csv(nda_dict_demo_path, delimiter='\t', skiprows=[1], usecols=nda_dict_demo_map_baseline.keys()).rename(columns=nda_dict_demo_map_baseline)
-# Merge the participants_df with the nda_dict_demo_df on participant_id
+# Merge the participants_df with the nda_dict_demo_df_baseline on participant_id
 participants_df = pd.merge(participants_df, nda_dict_demo_df_baseline, how='left', on=['participant_id', 'session_id'], suffixes=('', '_new'))
 overwrite_columns = ['participant_education', 'parental_education_1', 'parental_partner_education', 'income']
 # Update the columns with new values from participants_df (columns with '_new' suffix)
@@ -189,10 +198,20 @@ nda_dict_site_df = pd.read_csv(nda_dict_site_path, delimiter='\t', skiprows=[1],
 # Merge the participants_df with the nda_dict_site_df on participant_id and session_id
 participants_df = pd.merge(participants_df, nda_dict_site_df, how='left', on=['participant_id', 'session_id'])
 
-# Load the proper anesthesia exposure infromation from the NDA Dictionary
-nda_dict_anes_df = pd.read_csv(nda_dict_anes_path, delimiter='\t', skiprows=[1], usecols=nda_dict_anes_map.keys()).rename(columns=nda_dict_anes_map)
-# Merge the participants_df with the nda_dict_anes_df on participant_id and session_id
-participants_df = pd.merge(participants_df, nda_dict_anes_df, how='left', on=['participant_id', 'session_id'])
+# Load the proper longitudinal anesthesia exposure infromation from the NDA Dictionary
+nda_dict_anes_long_df = pd.read_csv(nda_dict_anes_long_path, delimiter='\t', skiprows=[1], usecols=nda_dict_anes_long_map.keys()).rename(columns=nda_dict_anes_long_map)
+# Merge the participants_df with the nda_dict_anes_long_df on participant_id and session_id
+participants_df = pd.merge(participants_df, nda_dict_anes_long_df, how='left', on=['participant_id', 'session_id'])
+
+# Load the proper baseline anesthesia exposure information from the NDA Dictionary
+nda_dict_anes_base_df = pd.read_csv(nda_dict_anes_base_path, delimiter='\t', skiprows=[1], usecols=nda_dict_anes_base_map.keys()).rename(columns=nda_dict_anes_base_map)
+# Merge the participants_df with the nda_dict_anes_base_df on participant_id and session_id
+participants_df = pd.merge(participants_df, nda_dict_anes_base_df, how='left', on=['participant_id', 'session_id'], suffixes=('', '_new'))
+# Update the column with new values from participants_df (column with '_new' suffix)
+mask2 = ~participants_df['anesthesia_exposure_new'].isnull() # Only update if new value is not NaN
+participants_df.loc[mask2, 'anesthesia_exposure'] = participants_df.loc[mask2, 'anesthesia_exposure_new']
+# Drop the column with the '_new' suffix
+participants_df.drop(['anesthesia_exposure_new'], axis=1, inplace=True)
 
 # Load the mri_info file into a pandas dataframe using the mri_info_map keys as the columns
 mri_info_df = pd.read_csv(mri_info_path, delimiter='\t', skiprows=[1], usecols=mri_info_map.keys()).rename(columns=mri_info_map)
@@ -256,7 +275,7 @@ def race_column_info(participants_df):
 
     return
 
-# Convert latinx the same way as the other race columns
+# Convert latinx variable the same way as the other race columns
 participants_df["Do you consider the child Hispanic/Latino/Latina?"] = participants_df["Do you consider the child Hispanic/Latino/Latina?"].fillna(888)
 participants_df["Do you consider the child Hispanic/Latino/Latina?"] = participants_df["Do you consider the child Hispanic/Latino/Latina?"].astype('int')
 
@@ -329,7 +348,10 @@ participants_df["participant_education"] = participants_df["participant_educatio
 participants_df["participant_education"] = participants_df["participant_education"].astype('int')
 
 # Calculate max between parental_education_1 and parental_partner_education and save in new parental_education variable, then cast as integer and fill in NaNs with 888
+participants_df["parental_education_1"] = participants_df["parental_education_1"].replace({999.0: -0.1, 777.0: -0.2})
+participants_df["parental_partner_education"] = participants_df["parental_partner_education"].replace({999.0: -0.1, 777.0: -0.2})
 participants_df["parental_education"] = participants_df.apply(lambda row: max(row["parental_education_1"], row["parental_partner_education"]), axis=1)
+participants_df["parental_education"] = participants_df["parental_education"].replace({-0.1: 999.0, -0.2: 777.0})
 participants_df["parental_education"] = participants_df["parental_education"].fillna(888)
 participants_df["parental_education"] = participants_df["parental_education"].astype('int')
 
@@ -337,10 +359,10 @@ participants_df["parental_education"] = participants_df["parental_education"].as
 participants_df["anesthesia_exposure"] = participants_df["anesthesia_exposure"].fillna(888)
 participants_df["anesthesia_exposure"] = participants_df["anesthesia_exposure"].astype('int')
 
-# ?? fill pc scores' NaNs with 888 ?? and cast it as an integer ??
-#participants_df["pc1"] = participants_df["pc1"].fillna(888)
-#participants_df["pc2"] = participants_df["pc2"].fillna(888)
-#participants_df["pc3"] = participants_df["pc3"].fillna(888)
+# Fill in pc scores' NaNs with 888
+participants_df["pc1"] = participants_df["pc1"].fillna(888)
+participants_df["pc2"] = participants_df["pc2"].fillna(888)
+participants_df["pc3"] = participants_df["pc3"].fillna(888)
 
 # Reorder columns to match older versions of participants tsv
 reordered_columns = [
@@ -385,12 +407,9 @@ reordered_columns = [
     ] 
 participants_df_reordered = participants_df[reordered_columns]
 
-print(participants_df_reordered)
-
 # Sort rows A to Z by participant_id
 participants_df_reordered_sorted = participants_df_reordered.sort_values(by='participant_id')
 
-print(participants_df_reordered_sorted)
 # Convert participants_df_reordered_sorted to tsv format
 participants_df_reordered_sorted.to_csv('/home/rando149/shared/data/Collection_3165_Supporting_Documentation/participants_v1.0.3/participants.tsv', sep='\t', index=False)
 
