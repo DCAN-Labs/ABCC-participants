@@ -12,6 +12,9 @@ pd.set_option('expand_frame_repr', False)
 #   3. Add MRI information from the mri01 spreadsheet via the NDA Dictionary source
 #   4. Add matched group information from the original participants.tsv
 
+# Output path for newest participants.tsv
+output_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/participants_v1.0.3/participants.tsv'
+
 # Data Sources
 
 # Download Tabulated Datasets from NDA
@@ -411,7 +414,7 @@ participants_df_reordered = participants_df[reordered_columns]
 participants_df_reordered_sorted = participants_df_reordered.sort_values(by='participant_id')
 
 # Convert participants_df_reordered_sorted to tsv format
-participants_df_reordered_sorted.to_csv('/home/rando149/shared/data/Collection_3165_Supporting_Documentation/participants_v1.0.3/participants.tsv', sep='\t', index=False)
+participants_df_reordered_sorted.to_csv(output_path, sep='\t', index=False)
 
 #FUTURE NOTES:
 #
