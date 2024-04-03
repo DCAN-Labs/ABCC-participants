@@ -44,6 +44,28 @@ c3165_manifest_path = '/home/rando149/shared/data/Collection_3165_Supporting_Doc
 #   TODO: Determine more legitimate source for the matched group info (Box directory with the ABCD 2.0 Release)
 original_participants_path = '/home/rando149/shared/data/Collection_3165_Supporting_Documentation/participants_v1.0.0/participants.tsv'
 
+'''
+import argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Script to make participants TSV.')
+    parser.add_argument('--tabulated_data_path', type=str, default='/home/rando149/shared/data/Collection_3165_Supporting_Documentation/ABCD4.0_MASTER_DATA_FILE.csv', help='Path to tabulated data')
+    parser.add_argument('--nda_dict_demo_path', type=str, default='/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/pdem02.txt', help="Path to NDA Dictionary's ABCD Parent Demographics Survey")
+    parser.add_argument('--nda_dict_demo_long_path', type=str, default='/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/abcd_lpds01.txt', help="Path to NDA Dictionary's ABCD Longitudinal Parent Demographics Survey")
+    parser.add_argument('--nda_dict_twin_path', type=str, default='/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/fhxp102.txt', help="Path to NDA Dictionary's ABCD Family History Assessment Part 1")
+    parser.add_argument('--nda_dict_site_path', type=str, default='/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/abcd_lt01.txt', help="Path to NDA Dictionary's site information")
+    parser.add_argument('--nda_dict_anes_long_path', type=str, default='/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/abcd_lssmh01.txt', help="Path to NDA Dictionary's longitudinal anesthesia exposure information")
+    parser.add_argument('--nda_dict_anes_base_path', type=str, default='/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/abcd_medhxss01.txt', help="Path to NDA Dictionary's baseline anesthesia exposure information")
+    parser.add_argument('--mri_info_path', type=str, default='/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_tabulated_data-20230412/abcd_mri01.txt', help='Path to MRI Scanner information')
+    parser.add_argument('--fastqc01_path', type=str, default='/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_fastqc01-20211221.txt', help='Path to QC info')
+    parser.add_argument('--c3165_manifest_path', type=str, default='/home/rando149/shared/data/Collection_3165_Supporting_Documentation/abcd_collection-3165-20230407/datastructure_manifest.txt', help='Path to Collection 3165 datastructure manifest')
+    parser.add_argument('--original_participants_path', type=str, default='/home/rando149/shared/data/Collection_3165_Supporting_Documentation/participants_v1.0.0/participants.tsv', help='Path to previous participants version')
+    return parser.parse_args()
+
+args = parse_args()
+
+'''
+
 # Hashmap of column name in Tabulated Datasets to that of the participants.tsv
 tabulated_data_map = {
     "subjectkey": "participant_id",
